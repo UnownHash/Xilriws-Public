@@ -71,7 +71,7 @@ class MalteLogin:
                 html = await self.tab.get_content()
                 if "Log in" not in html:
                     try:
-                        await asyncio.wait_for(js_future, timeout=5)
+                        await asyncio.wait_for(js_future, timeout=10)
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
 
@@ -107,7 +107,7 @@ class MalteLogin:
                     await consent_accept.click()
 
                 try:
-                    pokemongo_url = await asyncio.wait_for(pokemongo_url_future, timeout=10)
+                    pokemongo_url = await asyncio.wait_for(pokemongo_url_future, timeout=20)
                 except asyncio.TimeoutError:
                     print("Timeout error!")
                     raise LoginException("Timeout while waiting for browser to finish")
