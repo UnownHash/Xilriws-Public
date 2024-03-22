@@ -4,8 +4,8 @@ RUN apt update -y && \
     apt clean && \
     pip install poetry
 
-WORKDIR /app
-COPY . .
+WORKDIR /maltelogin
+COPY app .
 RUN poetry install
 
 ENTRYPOINT ["poetry", "run", "litestar", "run"]

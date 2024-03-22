@@ -1,12 +1,13 @@
 version: '3.7'
 services:
   maltelogin:
-    build: .
+    image: maltelogin
     container_name: maltelogin
     restart: unless-stopped
     volumes:
       - ./config.json:/app/config.json
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    ports:
-      - "7672:7672"
+    #ports:
+    #  - "5090:5090"
+    # ^^ uncomment these if you need the endpoint exposed outside of your docker network
