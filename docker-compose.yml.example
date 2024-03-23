@@ -5,7 +5,7 @@ services:
     container_name: maltelogin
     restart: unless-stopped
     volumes:
-      - ./config.json:/app/config.json
+      - ./config.json:/maltelogin/config.json
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     #ports:

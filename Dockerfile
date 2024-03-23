@@ -5,7 +5,12 @@ RUN apt update -y && \
     pip install poetry
 
 WORKDIR /maltelogin
-COPY app .
+
+COPY app.py .
+COPY ptc_auth.py .
+COPY poetry.lock .
+COPY pyproject.toml .
+
 RUN poetry install
 
 ENTRYPOINT ["poetry", "run", "litestar", "run"]
