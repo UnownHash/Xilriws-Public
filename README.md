@@ -2,6 +2,8 @@
 
 very shitty.
 
+cd into the `app` directory
+
 you preferrably set this up using poetry `poetry install` and then `poetry run litestar run`
 
 alternatively you can `pip install nodriver litestar[standard]` in whatever environment you prefer. 
