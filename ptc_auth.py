@@ -17,6 +17,8 @@ class PtcAuth:
     reese_cookie: str | None = None
     reese_expiration: int = 0
     browser_task: asyncio.Task | None = None
+    browser: nodriver.Browser | None = None
+    tab: nodriver.Tab | None = None
 
     async def auth(self, username: str, password: str, full_url: str, proxy: str | None = None) -> str:
         if self.reese_cookie and time.time() < self.reese_expiration:
@@ -36,88 +38,85 @@ class PtcAuth:
         return code
 
     async def browser_auth(self, username: str, password: str, full_url: str) -> str:
-        browser = await nodriver.start(headless=True)
+        if not self.browser:
+            self.browser = await nodriver.start(headless=False)
 
-        try:
-            js_future = asyncio.get_running_loop().create_future()
+        await self.browser.cookies.clear()
 
-            async def js_check_handler(event: nodriver.cdp.network.ResponseReceived):
-                url = event.response.url
-                if not url.startswith("https://access.pokemon.com/"):
-                    return
-                if not url.endswith("?d=access.pokemon.com"):
-                    return
-                js_future.set_result(True)
+        js_future = asyncio.get_running_loop().create_future()
 
-            tab = await browser.get(url=full_url)
-            tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
+        async def js_check_handler(event: nodriver.cdp.network.ResponseReceived):
+            url = event.response.url
+            if not url.startswith("https://access.pokemon.com/"):
+                return
+            if not url.endswith("?d=access.pokemon.com"):
+                return
+            js_future.set_result(True)
 
-            html = await tab.get_content()
-            if "Log in" not in html:
+        if not self.tab:
+            self.tab = await self.browser.get()
+        self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
+        await self.tab.get(url=full_url)
+
+        html = await self.tab.get_content()
+        if "Log in" not in html:
+            if not js_future.done():
                 try:
-                    await asyncio.wait_for(js_future, timeout=10)
+                    await asyncio.wait_for(js_future, timeout=1000)
                 except asyncio.TimeoutError:
                     raise LoginException("Timeout on JS challenge")
 
-                await tab.reload()
+            await self.tab.reload()
 
-            tab.handlers.clear()
+        self.tab.handlers.clear()
 
-            raw_cookies = await tab.evaluate("document.cookie")
-            cookies = raw_cookies.split("; ")
-            for cookie in cookies:
-                split_cookie = cookie.split("=")
-                if split_cookie[0] == "reese84":
-                    cookie_value = "=".join(split_cookie[1:])
-                    self.reese_cookie = cookie_value
-                    self.reese_expiration = (
-                        int(time.time()) + 10 * 60
-                    )  # hardcoded 10 minutes because we can't get the real expiration easily with nodriver
+        cookies = await self.browser.cookies.get_all()
+        for cookie in cookies:
+            if cookie.name != "reese84":
+                continue
+            self.reese_cookie = cookie.value
+            self.reese_expiration = int(cookie.expires)
+            # self.reese_expiration = int(time.time()) + 5
 
-            accept_input = await tab.wait_for("input#accept")
+        accept_input = await self.tab.wait_for("input#accept")
 
-            js_email = f'document.querySelector("input#email").value="{username}"'
-            js_pass = f'document.querySelector("input#password").value="{password}"'
+        js_email = f'document.querySelector("input#email").value="{username}"'
+        js_pass = f'document.querySelector("input#password").value="{password}"'
 
-            await tab.evaluate(js_email + ";" + js_pass)
+        await self.tab.evaluate(js_email + ";" + js_pass)
 
-            pokemongo_url_future = asyncio.get_running_loop().create_future()
+        pokemongo_url_future = asyncio.get_running_loop().create_future()
 
-            async def send_handler(event: nodriver.cdp.network.RequestWillBeSent):
-                url = event.request.url
-                if url.startswith("pokemongo://"):
-                    pokemongo_url_future.set_result(url)
+        async def send_handler(event: nodriver.cdp.network.RequestWillBeSent):
+            url = event.request.url
+            if url.startswith("pokemongo://"):
+                pokemongo_url_future.set_result(url)
 
-            tab.add_handler(nodriver.cdp.network.RequestWillBeSent, send_handler)
+        self.tab.add_handler(nodriver.cdp.network.RequestWillBeSent, send_handler)
 
-            await accept_input.click()
+        await accept_input.click()
 
-            await tab.wait_for("html")
-            await tab.update_target()
+        await self.tab.wait_for("html")
+        await self.tab.update_target()
 
-            if tab.target.url.startswith("https://access.pokemon.com/consent"):
-                consent_accept = await tab.wait_for("input#accept")
-                if not consent_accept:
-                    raise LoginException("no consent button")
-                await consent_accept.click()
+        if self.tab.target.url.startswith("https://access.pokemon.com/consent"):
+            consent_accept = await self.tab.wait_for("input#accept")
+            if not consent_accept:
+                raise LoginException("no consent button")
+            await consent_accept.click()
 
-            try:
-                pokemongo_url = await asyncio.wait_for(pokemongo_url_future, timeout=15)
-            except asyncio.TimeoutError:
-                print("Timeout error!")
-                raise LoginException("Timeout while waiting for browser to finish")
+        try:
+            pokemongo_url = await asyncio.wait_for(pokemongo_url_future, timeout=15)
+        except asyncio.TimeoutError:
+            print("Timeout error!")
+            raise LoginException("Timeout while waiting for browser to finish")
 
-            tab.handlers.clear()
+        self.tab.handlers.clear()
 
-            login_code = self.__extract_login_code(pokemongo_url)
-            if not login_code:
-                raise LoginException("no login code found")
+        login_code = self.__extract_login_code(pokemongo_url)
+        if not login_code:
+            raise LoginException("no login code found")
 
-        except Exception as e:
-            browser.stop()
-            raise e
-
-        browser.stop()
         return login_code
 
     async def serving_auth_the_old_fashioned_way(
