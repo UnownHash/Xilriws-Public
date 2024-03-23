@@ -6,7 +6,7 @@ cd into the `app` directory
 
 you preferrably set this up using poetry `poetry install` and then `poetry run litestar run`
 
-alternatively you can `pip install nodriver litestar[standard]` in whatever environment you prefer. 
+alternatively you can `pip install nodriver litestar[standard] httpx` in whatever environment you prefer. 
 then start using `litestar run`.
 
 dont forget to copy config.example.json to config.json
