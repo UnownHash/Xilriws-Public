@@ -24,7 +24,7 @@ class Data:
     url: str
 
 
-@post("/v1/login-code")
+@post("/api/v1/login-code")
 async def auth_endpoint(request: Request, data: Data) -> dict[str, str]:
     try:
         login_code = await auth.auth(data.username, data.password, data.url, data.proxy)
