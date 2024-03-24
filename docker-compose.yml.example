@@ -9,5 +9,5 @@ services:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     #ports:
-    #  - "5090:5090"
+    #  - "127.0.0.1:5090:5090"
     # ^^ uncomment these if you need the endpoint exposed outside of your docker network
