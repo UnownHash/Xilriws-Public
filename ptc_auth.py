@@ -128,7 +128,7 @@ class PtcAuth:
 
         proxies = None
         if proxy:
-            proxies = {"http": proxy, "https": proxy}
+            proxies = {"http://": proxy, "https://": proxy}
 
         async with httpx.AsyncClient(
             headers={
