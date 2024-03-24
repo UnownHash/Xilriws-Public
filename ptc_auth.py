@@ -39,7 +39,7 @@ class PtcAuth:
 
     async def browser_auth(self, username: str, password: str, full_url: str) -> str:
         if not self.browser:
-            self.browser = await nodriver.start(headless=False)
+            self.browser = await nodriver.start(headless=True)
 
         await self.browser.cookies.clear()
 
