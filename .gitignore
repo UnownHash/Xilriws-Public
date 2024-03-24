@@ -2,3 +2,7 @@
 **/__pycache__/**
 config.json
 docker-compose.yml
+dist/*
+build/*
+*.spec
+requirements.txt
