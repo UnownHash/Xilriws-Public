@@ -23,7 +23,7 @@ in your Dragonite config, add:
 
 ```toml
 [general]
-remote_auth_url = "http://maltelogin:<port>/v1/login-code"
+remote_auth_url = "http://maltelogin:<port>/api/v1/login-code"
 ```
 
 this assumes you have everything in the same docker network. if you're hosting it externally, change the `maltelogin` hostname to
