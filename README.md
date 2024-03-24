@@ -1,6 +1,6 @@
 # Xilriws
 
-This is a very hastely written solution to the new PTC login issuess
+Unlike Swirlix, Xilriws doesn't use a 3rd party, but a real browser instead. This has the advantage of being free and not requiring an account, but might result in some issues unique to your system. As such, a docker installation is highly recommended, even if the rest of your setup isn't dockerized.
 
 ## Docker installation (recommended)
 
