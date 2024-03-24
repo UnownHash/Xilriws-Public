@@ -40,6 +40,7 @@ async def main():
         config = json.load(f)
 
     app = Litestar(route_handlers=[auth_endpoint])
+    auth.logger = app.logger
     server_config = uvicorn.Config(
         app,
         port=int(config["port"]),

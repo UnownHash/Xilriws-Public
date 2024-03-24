@@ -6,6 +6,7 @@ import time
 
 import httpx
 import nodriver
+from litestar.types.protocols import Logger
 
 
 class LoginException(Exception):
@@ -17,12 +18,13 @@ class PtcAuth:
     reese_cookie: str | None = None
     reese_expiration: int = 0
     browser_task: asyncio.Task | None = None
+    logger: Logger
 
     async def auth(self, username: str, password: str, full_url: str, proxy: str | None = None) -> str:
         if self.reese_cookie and time.time() < self.reese_expiration:
             return await self.serving_auth_the_old_fashioned_way(username, password, full_url=full_url, proxy=proxy)
 
-        print("reese cookie expired, getting a new one")
+        self.logger.info("reese cookie expired, getting a new one")
 
         if self.browser_task:
             await self.browser_task
@@ -36,11 +38,17 @@ class PtcAuth:
         return code
 
     async def browser_auth(self, username: str, password: str, full_url: str) -> str:
-        browser = await nodriver.start(headless=True)
+        self.logger.info("BROWSER: starting")
+        try:
+            browser = await nodriver.start(headless=True)
+        except Exception as e:
+            self.logger.error(f"got exception {str(e)} while starting browser")
+            raise e
 
         # await browser.cookies.clear()
 
         try:
+
             js_future = asyncio.get_running_loop().create_future()
 
             async def js_check_handler(event: nodriver.cdp.network.ResponseReceived):
@@ -51,15 +59,19 @@ class PtcAuth:
                     return
                 js_future.set_result(True)
 
+            self.logger.info("BROWSER: opening tab")
             tab = await browser.get()
             tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
+            self.logger.info("BROWSER: opening PTC")
             await tab.get(url=full_url)
 
             html = await tab.get_content()
             if "Log in" not in html:
+                self.logger.info("BROWSER: Got Error 15 page")
                 if not js_future.done():
                     try:
-                        await asyncio.wait_for(js_future, timeout=1000)
+                        await asyncio.wait_for(js_future, timeout=10)
+                        self.logger.info("BROWSER: JS check done. reloading")
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
 
@@ -67,20 +79,24 @@ class PtcAuth:
 
             tab.handlers.clear()
 
+            self.logger.info("BROWSER: getting cookies")
             cookies = await browser.cookies.get_all()
             for cookie in cookies:
                 if cookie.name != "reese84":
                     continue
+                self.logger.info("BROWSER: setting reese84 cookie")
                 self.reese_cookie = cookie.value
                 self.reese_expiration = int(cookie.expires)
                 # self.reese_expiration = int(time.time()) + 5
 
             accept_input = await tab.wait_for("input#accept")
+            self.logger.info("BROWSER: got login page")
 
             js_email = f'document.querySelector("input#email").value="{username}"'
             js_pass = f'document.querySelector("input#password").value="{password}"'
 
             await tab.evaluate(js_email + ";" + js_pass)
+            self.logger.info("BROWSER: filled out login form")
 
             pokemongo_url_future = asyncio.get_running_loop().create_future()
 
@@ -92,20 +108,25 @@ class PtcAuth:
             tab.add_handler(nodriver.cdp.network.RequestWillBeSent, send_handler)
 
             await accept_input.click()
+            self.logger.info("BROWSER: submitted login form")
 
             await tab.wait_for("html")
             await tab.update_target()
+            self.logger.info("BROWSER: finished login")
 
             if tab.target.url.startswith("https://access.pokemon.com/consent"):
+                self.logger.info("BROWSER: got consent screen")
                 consent_accept = await tab.wait_for("input#accept")
                 if not consent_accept:
                     raise LoginException("no consent button")
                 await consent_accept.click()
+                self.logger.info("BROWSER: gave consent")
 
             try:
+                self.logger.info("BROWSER: waiting for pokemongo uri")
                 pokemongo_url = await asyncio.wait_for(pokemongo_url_future, timeout=15)
+                self.logger.info("BROWSER: got pokemongo uri")
             except asyncio.TimeoutError:
-                print("Timeout error!")
                 raise LoginException("Timeout while waiting for browser to finish")
 
             tab.handlers.clear()
@@ -114,6 +135,7 @@ class PtcAuth:
             if not login_code:
                 raise LoginException("no login code found")
         except Exception as e:
+            self.logger.error(f"got {str(e)} during browser login")
             browser.stop()
             raise e
 
@@ -149,7 +171,7 @@ class PtcAuth:
 
             if resp.status_code == 403:
                 self.reese_cookie = None
-                print("cookie expired. opening the browser")
+                self.logger.info("cookie expired. opening the browser")
                 return await self.auth(username, password, full_url, proxy)  # bad
 
             if resp.status_code != 200:
@@ -165,7 +187,7 @@ class PtcAuth:
 
             if resp.status_code == 403:
                 self.reese_cookie = None
-                print("cookie expired. opening the browser")
+                self.logger.info("cookie expired. opening the browser")
                 return await self.auth(username, password, full_url, proxy)  # bad
 
             if login_resp.status_code != 200:
