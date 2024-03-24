@@ -168,6 +168,8 @@ class PtcAuth:
             proxies=proxies,
             cookies={"reese84": self.reese_cookie},
         ) as client:
+            logger.info("Calling PTC page 1/2")
+
             resp = await client.get(full_url)
 
             if resp.status_code == 403:
@@ -179,6 +181,8 @@ class PtcAuth:
                 raise LoginException(f"OAUTH: {resp.status_code} but expected 200")
 
             csrf, challenge = self.__extract_csrf_and_challenge(resp.text)
+
+            logger.info("Calling PTC page 2/2")
 
             login_resp = await client.post(
                 self.ACCESS_URL + "login",
@@ -200,6 +204,8 @@ class PtcAuth:
                 if "error-message" in login_resp.text:
                     raise LoginException("Login failed, probably invalid credentials")
 
+                logger.info("Need to give consent (+1 extra PTC page)")
+
                 csrf_consent, challenge_consent = self.__extract_csrf_and_challenge(login_resp.text)
                 resp_consent = await client.post(
                     self.ACCESS_URL + "consent",
@@ -211,6 +217,7 @@ class PtcAuth:
                 if not login_code:
                     raise LoginException("No Login Code after consent, please check account")
 
+            logger.info("Got login code")
             return login_code
 
     def __extract_login_code(self, html) -> str | None:
