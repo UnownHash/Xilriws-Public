@@ -22,7 +22,7 @@ in your Dragonite config, add:
 
 ```toml
 [general]
-remote_auth_url = "http://xilriws:<port>/v1/login-code"
+remote_auth_url = "http://xilriws:<port>/api/v1/login-code"
 ```
 
 this assumes you have everything in the same docker network. if you're hosting it externally, change the `xilriws` hostname to
