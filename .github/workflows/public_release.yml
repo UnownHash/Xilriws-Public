@@ -11,9 +11,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  PUBLIC_REPO_NAME: UnownHash/Xilriws
-  PUBLIC_IMAGE_NAME: unownhash/xilriws
-  PYTHON_VERSION: 3.9
+  PUBLIC_REPO_NAME: UnownHash/Xilriws-Public
 
 jobs:
   release:
