@@ -1,16 +1,10 @@
-FROM python:3.11-slim
-RUN apt update -y && \
-    apt install -y chromium-driver && \
-    apt clean && \
-    pip install poetry
+FROM alpine:latest
+RUN apk update && apk add --no-cache bash \
+        chromium \
+        chromium-chromedriver
 
-WORKDIR /maltelogin
+WORKDIR /xilriws
 
-COPY app.py .
-COPY ptc_auth.py .
-COPY poetry.lock .
-COPY pyproject.toml .
+COPY . .
 
-RUN poetry install
-
-ENTRYPOINT ["poetry", "run", "litestar", "run"]
+ENTRYPOINT ["./xilriws"]
