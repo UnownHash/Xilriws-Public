@@ -1,21 +1,10 @@
 # Malte's quick solution to auth problems
 
-very shitty.
+This is a very hastely written solution to PTC's new Imperva protection. It uses 
+a real browser to pass it every ~15 minutes. All other logins are done like in the 
+past.
 
-cd into the `app` directory
-
-you preferrably set this up using poetry `poetry install` and then `poetry run litestar run`
-
-alternatively you can `pip install nodriver litestar[standard] httpx` in whatever environment you prefer. 
-then start using `litestar run`.
-
-dont forget to copy config.example.json to config.json
-
-you need chromedriver installed, and it needs to be in your `PATH`.
-The easiest way to do this on ubuntu-like operating systems is `sudo apt install chromium-chromedriver`.
-
-
-# Docker Instructions
+## Docker installation (recommended)
 
 clone this repo with `git clone git@github.com:UnownHash/maltelogin.git`
 
@@ -30,9 +19,28 @@ update the `volumes` section in the docker-compose to match the file name and pa
 
 start the container with `docker-compose up -d`
 
-in your Dragonite config, add this line under the [general] section
+in your Dragonite config, add: 
 
-`remote_auth_url = "http://maltelogin:<port>/v1/login-code"`
+```toml
+[general]
+remote_auth_url = "http://maltelogin:<port>/v1/login-code"
+```
 
 this assumes you have everything in the same docker network. if you're hosting it externally, change the `maltelogin` hostname to
 something else accordingly.
+
+
+## Manual installation (not recommended)
+
+you preferrably set this up using poetry `poetry install` and then `poetry run litestar run`
+
+alternatively you can `pip install nodriver litestar[standard] httpx` in whatever environment you prefer. 
+then start using `litestar run`.
+
+Note that this has to be run without root.
+
+copy config.example.json to config.json
+
+you need chromedriver installed, and it needs to be in your `PATH`.
+The easiest way to do this on ubuntu-like operating systems is `sudo apt install chromium-driver`.
+
