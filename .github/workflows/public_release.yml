@@ -12,6 +12,7 @@ on:
 env:
   REGISTRY: ghcr.io
   PUBLIC_REPO_NAME: UnownHash/Xilriws-Public
+  PUBLIC_IMAGE_NAME: unownhash/xilriws-public
 
 jobs:
   release:
@@ -59,9 +60,6 @@ jobs:
 #    runs-on: ubuntu-latest
 #    permissions: read-all
 #    steps:
-#      - name: Check for testing tag
-#        id: check_image_tag
-#        run: echo "imagetag=$(echo ${{ inputs.tag }} | grep -q -E 'testing' && echo testing || echo latest)" >> $GITHUB_OUTPUT
 #      - name: Checkout repository
 #        uses: actions/checkout@v4
 #      - name: Set up QEMU
@@ -73,7 +71,7 @@ jobs:
 #        with:
 #          registry: ${{ env.REGISTRY }}
 #          username: ${{ github.actor }}
-#          password: ${{ secrets.SWIRLIX_RELEASE_CLASSIC }}
+#          password: ${{ secrets.XILRIWS_RELEASE_CLASSIC }}
 #      - name: Build and push Docker image to public repository
 #        uses: docker/build-push-action@v5
 #        with:
@@ -84,7 +82,7 @@ jobs:
 #          build-args: |
 #            VERSION=${{ inputs.tag }}
 #          labels: |
-#            package-name=swirlix-public
+#            package-name=xilriws-public
 #          tags: |
 #            ${{ env.REGISTRY }}/${{ env.PUBLIC_IMAGE_NAME }}:${{ steps.check_image_tag.outputs.imagetag }}
 #            ${{ env.REGISTRY }}/${{ env.PUBLIC_IMAGE_NAME }}:${{ inputs.tag }}
