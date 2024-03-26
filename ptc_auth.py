@@ -81,7 +81,7 @@ class PtcAuth:
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
 
-                # await tab.reload()
+                await tab.reload()
 
             tab.handlers.clear()
 
