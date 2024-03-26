@@ -39,6 +39,7 @@ async def main():
     with open("config.json", "r") as f:
         config = json.load(f)
 
+    auth.extension_path = config.get("fingerprint_random_path", "/xilriws-fingerprint-random/")
     await auth.prepare()
 
     app = Litestar(route_handlers=[auth_endpoint])

@@ -6,3 +6,6 @@ dist/*
 build/*
 *.spec
 requirements.txt
+fingerprint-random*
+test
+*.js

@@ -21,6 +21,7 @@ class PtcAuth:
     reese_expiration: int = 0
     browser_lock: asyncio.Lock
     browser_event: asyncio.Event
+    extension_path = ""
 
     async def prepare(self):
         self.browser_lock = asyncio.Lock()
@@ -38,7 +39,6 @@ class PtcAuth:
                 resp = await self.browser_auth(username, password, full_url)
                 self.browser_event.set()
                 return resp
-
         return await self.serving_auth_the_old_fashioned_way(username, password, full_url=full_url, proxy=proxy)
 
     def cookie_is_ok(self) -> bool:
@@ -47,7 +47,7 @@ class PtcAuth:
     async def browser_auth(self, username: str, password: str, full_url: str) -> str:
         logger.info("BROWSER: starting")
         try:
-            browser = await nodriver.start(headless=True)
+            browser = await nodriver.start(headless=True, browser_args=[f"--load-extension={self.extension_path}"])
         except Exception as e:
             logger.error(f"got exception {str(e)} while starting browser")
             raise e
@@ -77,17 +77,15 @@ class PtcAuth:
                 if not js_future.done():
                     try:
                         await asyncio.wait_for(js_future, timeout=10)
+                        tab.handlers.clear()
                         logger.info("BROWSER: JS check done. reloading")
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
-
                 await tab.reload()
 
                 if "Log in" not in await tab.get_content():
                     logger.error("BROWSER: Did NOT pass JS check. This is not good")
                     raise LoginException("Didn't pass JS check")
-
-            tab.handlers.clear()
 
             logger.info("BROWSER: getting cookies")
             cookies = await browser.cookies.get_all()
@@ -97,7 +95,7 @@ class PtcAuth:
                 logger.info("BROWSER: setting reese84 cookie")
                 self.reese_cookie = cookie.value
                 self.reese_expiration = int(cookie.expires)
-                # self.reese_expiration = int(time.time()) + 20
+                # self.reese_expiration = int(time.time()) + 10
 
             accept_input = await tab.wait_for("input#accept")
             logger.info("BROWSER: got login page")
@@ -199,7 +197,7 @@ class PtcAuth:
                 data={"_csrf": csrf, "challenge": challenge, "email": username, "password": password},
             )
 
-            if resp.status_code == 403:
+            if login_resp.status_code == 403:
                 self.reese_cookie = None
                 logger.info("cookie expired. opening the browser")
                 return await self.auth(username, password, full_url, proxy)  # bad
