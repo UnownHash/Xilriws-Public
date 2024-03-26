@@ -83,6 +83,10 @@ class PtcAuth:
 
                 await tab.reload()
 
+                if "Log in" not in await tab.get_content():
+                    logger.error("BROWSER: Did NOT pass JS check. This is not good")
+                    raise LoginException("Didn't pass JS check")
+
             tab.handlers.clear()
 
             logger.info("BROWSER: getting cookies")
@@ -93,7 +97,7 @@ class PtcAuth:
                 logger.info("BROWSER: setting reese84 cookie")
                 self.reese_cookie = cookie.value
                 self.reese_expiration = int(cookie.expires)
-                # self.reese_expiration = int(time.time()) + 5
+                # self.reese_expiration = int(time.time()) + 20
 
             accept_input = await tab.wait_for("input#accept")
             logger.info("BROWSER: got login page")
