@@ -11,7 +11,7 @@ from litestar.exceptions import HTTPException
 
 from ptc_auth import PtcAuth
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 httpx_logger = logging.getLogger("httpx")
 httpx_logger.setLevel(logging.CRITICAL)
