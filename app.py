@@ -39,6 +39,8 @@ async def main():
     with open("config.json", "r") as f:
         config = json.load(f)
 
+    await auth.prepare()
+
     app = Litestar(route_handlers=[auth_endpoint])
     server_config = uvicorn.Config(
         app,

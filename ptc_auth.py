@@ -19,25 +19,30 @@ class PtcAuth:
     ACCESS_URL = "https://access.pokemon.com/"
     reese_cookie: str | None = None
     reese_expiration: int = 0
-    browser_task: asyncio.Task | None = None
+    browser_lock: asyncio.Lock
+    browser_event: asyncio.Event
+
+    async def prepare(self):
+        self.browser_lock = asyncio.Lock()
+        self.browser_event = asyncio.Event()
 
     async def auth(self, username: str, password: str, full_url: str, proxy: str | None = None) -> str:
         logger.info(f"Requested auth for {username}")
-        if self.reese_cookie and time.time() < self.reese_expiration:
-            return await self.serving_auth_the_old_fashioned_way(username, password, full_url=full_url, proxy=proxy)
 
-        logger.info("reese cookie expired, getting a new one")
+        if not self.cookie_is_ok():
+            self.browser_event.clear()
 
-        if self.browser_task:
-            await self.browser_task
-            return await self.auth(
-                username, password, full_url, proxy
-            )  # potentially bad if it didn't get a cookie or whatever
+        async with self.browser_lock:
+            if not self.browser_event.is_set():
+                logger.info("reese cookie expired, getting a new one")
+                resp = await self.browser_auth(username, password, full_url)
+                self.browser_event.set()
+                return resp
 
-        self.browser_task = asyncio.create_task(self.browser_auth(username, password, full_url))
-        code = await self.browser_task
-        self.browser_task = None
-        return code
+        return await self.serving_auth_the_old_fashioned_way(username, password, full_url=full_url, proxy=proxy)
+
+    def cookie_is_ok(self) -> bool:
+        return self.reese_cookie and time.time() < self.reese_expiration
 
     async def browser_auth(self, username: str, password: str, full_url: str) -> str:
         logger.info("BROWSER: starting")
@@ -76,7 +81,7 @@ class PtcAuth:
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
 
-                await tab.reload()
+                # await tab.reload()
 
             tab.handlers.clear()
 
