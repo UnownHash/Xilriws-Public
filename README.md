@@ -12,7 +12,12 @@ build the Docker image with `docker build -t xilriws .`
 
 copy the docker-compose config to your existing docker-compose file for the unown# stack, or on its own.
 if you have it on its own, you will need to make sure to uncomment the port mapping lines in the compose file. 
-keep in mind there is no authentication on this, so avoid exposing it to the public internet if possible. 
+keep in mind there is no authentication on this, so avoid exposing it to the public internet if possible.
+
+you can change the "replicas" number to alter how many copies of the container will be spawned. traefik manages load balancing,
+and should work automatically. set this number in accordance with the avaliable RAM and CPU on your machine.
+
+the more copies of the container, the lower you can set login delay
 
 copy `config.json` somewhere into the path of wherever your docker-compose file is, and name it whatever you'd like.
 the example docker-compose assumes it's named `xilriws.json`, and in the same directory as the docker-compose file. 
