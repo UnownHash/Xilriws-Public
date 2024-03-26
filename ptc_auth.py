@@ -63,7 +63,8 @@ class PtcAuth:
                     return
                 if not url.endswith("?d=access.pokemon.com"):
                     return
-                js_future.set_result(True)
+                if not js_future.done():
+                    js_future.set_result(True)
 
             logger.info("BROWSER: opening tab")
             tab = await browser.get()
