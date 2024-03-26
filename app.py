@@ -11,6 +11,8 @@ from litestar.exceptions import HTTPException
 
 from ptc_auth import PtcAuth
 
+VERSION = "0.1.1"
+
 httpx_logger = logging.getLogger("httpx")
 httpx_logger.setLevel(logging.CRITICAL)
 auth = PtcAuth()
@@ -50,6 +52,10 @@ async def main():
         # log_config=None,
     )
     server = uvicorn.Server(server_config)
+
+    version_logger = logging.getLogger("version")
+    version_logger.info(f"Running Xilriws v{VERSION}")
+
     await server.serve()
 
 
