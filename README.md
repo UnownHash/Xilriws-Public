@@ -6,6 +6,10 @@ As such, a docker installation is highly recommended, even if the rest of your s
 
 ## Docker installation (recommended)
 
+1. `git clone https://github.com/UnownHash/Xilriws-Public`
+2. `cp docker-compose.yml.example docker-compose.yml`
+3. 
+
 run `./run.sh` to download the xilriws binary and config file
 
 build the Docker image with `docker build -t xilriws .`
