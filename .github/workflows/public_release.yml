@@ -1,5 +1,8 @@
 name: public_release
 
+on:
+  workflow_dispatch:
+
 env:
   REGISTRY: ghcr.io
   PUBLIC_REPO_NAME: UnownHash/Xilriws-Public
