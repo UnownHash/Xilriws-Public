@@ -34,7 +34,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          poetry run pyinstaller app.py --onefile -n xilriws && cp config.json.example dist/config.json.example
+          poetry run pyinstaller app.py --onefile -n xilriws && cp config.json.example dist/xilriws.json.example
 
       - name: Push to Xilriws-Public
         uses: tech-thinker/push-to-repo@main
