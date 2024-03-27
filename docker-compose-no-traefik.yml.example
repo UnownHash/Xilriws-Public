@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  xilriws:
+    image: ghcr.io/unownhash/xilriws-public:main
+    restart: unless-stopped
+    volumes:
+      - ./xilriws.json:/xilriws/config.json
+    ports:
+    - "5090:5090"
