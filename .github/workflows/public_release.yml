@@ -34,7 +34,11 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          poetry run pyinstaller app.py --onefile -n xilriws && cp config.json.example dist/xilriws.json.example
+          poetry run pyinstaller app.py --onefile -n xilriws
+
+      - name: Copy xilriws files
+        run: |
+          cp config.json.example dist/xilriws.json.example && cp -r xilriws-public/* dist/
 
       - name: Push to Xilriws-Public
         uses: tech-thinker/push-to-repo@main
@@ -44,6 +48,7 @@ jobs:
           user-name: "github-actions[bot]"
           user-email: github-actions[bot]@users.noreply.github.com
           source-directory: "dist"
+          commit-message: "Xilriws release"
           destination-github-username: "UnownHash"
           destination-repository-name: "Xilriws-Public"
           target-branch: main
