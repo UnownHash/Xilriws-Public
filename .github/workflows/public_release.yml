@@ -1,14 +1,5 @@
 name: public_release
 
-on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag'
-        required: true
-        default: 'xilriws-v0.x.x'
-
-
 env:
   REGISTRY: ghcr.io
   PUBLIC_REPO_NAME: UnownHash/Xilriws-Public
@@ -42,19 +33,17 @@ jobs:
         run: |
           poetry run pyinstaller app.py --onefile -n xilriws && cp config.json.example dist/config.json.example
 
-      - name: Create Release Public
-        uses: softprops/action-gh-release@v1
+      - name: Push to Xilriws-Public
+        uses: tech-thinker/push-to-repo@main
         env:
-          GITHUB_TOKEN: ${{ secrets.XILRIWS_RELEASE_CLASSIC }}
+          API_TOKEN_GITHUB: ${{ secrets.XILRIWS_RELEASE_CLASSIC }}
         with:
-          name: Xilriws ${{ inputs.tag }}
-          tag_name: ${{ inputs.tag }}
-          draft: false
-          prerelease: true
-          fail_on_unmatched_files: true
-          repository: ${{ env.PUBLIC_REPO_NAME }}
-          files: |
-            ./dist/*
+          user-name: "github-actions[bot]"
+          user-email: github-actions[bot]@users.noreply.github.com
+          source-directory: "dist"
+          destination-github-username: "UnownHash"
+          destination-repository-name: "Xilriws-Public"
+          target-branch: main
 
 #  build-and-push-image:
 #    runs-on: ubuntu-latest
