@@ -40,7 +40,7 @@ jobs:
         run: |
           cp config.json.example dist/xilriws.json.example
           cp -r xilriws-public/* dist/
-          cp -r xilriws-public/.github/workflows/* dist/.github/workflows
+          mkdir dist/.github && mkdir dist/.github/workflows && cp -r xilriws-public/.github/workflows/* dist/.github/workflows
 
       - name: Push to Xilriws-Public
         uses: tech-thinker/push-to-repo@main
