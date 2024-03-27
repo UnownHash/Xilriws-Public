@@ -10,7 +10,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
   xilriws:
-    image: xilriws
+    image: ghcr.io/unownhash/xilriws-public:main
     restart: unless-stopped
     volumes:
       - ./xilriws.json:/xilriws/config.json
