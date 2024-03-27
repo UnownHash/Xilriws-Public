@@ -11,6 +11,8 @@ from litestar.exceptions import HTTPException
 
 from ptc_auth import PtcAuth
 
+VERSION = "0.2.0"
+
 httpx_logger = logging.getLogger("httpx")
 httpx_logger.setLevel(logging.CRITICAL)
 auth = PtcAuth()
@@ -39,6 +41,9 @@ async def main():
     with open("config.json", "r") as f:
         config = json.load(f)
 
+    auth.extension_path = config.get("fingerprint_random_path", "/xilriws-fingerprint-random/")
+    await auth.prepare()
+
     app = Litestar(route_handlers=[auth_endpoint])
     server_config = uvicorn.Config(
         app,
@@ -47,6 +52,10 @@ async def main():
         # log_config=None,
     )
     server = uvicorn.Server(server_config)
+
+    version_logger = logging.getLogger("version")
+    version_logger.info(f"Running Xilriws v{VERSION}")
+
     await server.serve()
 
 

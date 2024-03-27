@@ -1,4 +1,5 @@
 {
   "host": "0.0.0.0",
-  "port": 5090
+  "port": 5090,
+  "fingerprint_random_path": "/xilriws-fingerprint-random/"
 }
