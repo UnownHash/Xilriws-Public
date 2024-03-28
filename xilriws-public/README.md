@@ -23,8 +23,8 @@ something else accordingly.
 ### Update
 
 1. `git pull`
-2. `docker compose pull`
-3. `docker compose restart`
+2. `docker-compose pull`
+3. `docker-compose restart`
 
 you can change the "replicas" number to alter how many copies of the container will be spawned. traefik manages load balancing,
 and should work automatically. set this number in accordance with the avaliable RAM and CPU on your machine.
