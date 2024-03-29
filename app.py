@@ -38,6 +38,9 @@ async def auth_endpoint(request: Request, data: Data) -> dict[str, str]:
 
 
 async def main():
+    import signal
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
     with open("config.json", "r") as f:
         config = json.load(f)
 
