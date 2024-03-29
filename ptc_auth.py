@@ -154,9 +154,10 @@ class PtcAuth:
         except Exception as e:
             logger.error(f"Got {str(e)} during browser login - killing chrome")
             # self.browser.stop()
-            await self.browser.connection.aclose()
-            self.browser._process.terminate()
-            self.browser._process.wait()
+            await self.tab.send(nodriver.cdp.browser.close())
+            # await self.browser.connection.aclose()
+            # self.browser._process.terminate()
+            # self.browser._process.wait()
             self.tab = None
             self.browser = None
             await self.kill_chrom_processes()
