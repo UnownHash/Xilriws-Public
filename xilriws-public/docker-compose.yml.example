@@ -4,7 +4,7 @@ services:
   reverse-proxy:
     image: traefik:v2.11
     container_name: xilriws
-    command: --api.insecure=true --providers.docker
+    command: --api.insecure=true --providers.docker --providers.docker.exposedbydefault=false
     ports:
       - "5090:80"
     volumes:
@@ -18,5 +18,6 @@ services:
     - "5090"
     labels:
       - traefik.http.routers.xilriws.rule=HostRegexp(`{catchall:.*}`)
+      - traefik.enable=true
     deploy:
       replicas: 1
