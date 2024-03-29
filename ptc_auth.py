@@ -4,6 +4,7 @@ import asyncio
 import logging
 import re
 import time
+import subprocess
 
 import httpx
 import nodriver
@@ -22,6 +23,9 @@ class PtcAuth:
     browser_lock: asyncio.Lock
     browser_event: asyncio.Event
     extension_path = ""
+
+    browser: nodriver.Browser | None = None
+    tab: nodriver.Tab | None = None
 
     async def prepare(self):
         self.browser_lock = asyncio.Lock()
@@ -47,7 +51,10 @@ class PtcAuth:
     async def browser_auth(self, username: str, password: str, full_url: str) -> str:
         logger.info("BROWSER: starting")
         try:
-            browser = await nodriver.start(headless=True, browser_args=[f"--load-extension={self.extension_path}"])
+            if not self.browser:
+                config = nodriver.Config(headless=True)
+                config.add_extension(self.extension_path)
+                self.browser = await nodriver.start(config)
         except Exception as e:
             logger.error(f"got exception {str(e)} while starting browser")
             raise e
@@ -67,29 +74,30 @@ class PtcAuth:
                     js_future.set_result(True)
 
             logger.info("BROWSER: opening tab")
-            tab = await browser.get()
-            tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
+            if not self.tab:
+                self.tab = await self.browser.get()
+            self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("BROWSER: opening PTC")
-            await tab.get(url=full_url)
+            await self.tab.get(url=full_url)
 
-            html = await tab.get_content()
+            html = await self.tab.get_content()
             if "Log in" not in html:
                 logger.info("BROWSER: Got Error 15 page")
                 if not js_future.done():
                     try:
                         await asyncio.wait_for(js_future, timeout=10)
-                        tab.handlers.clear()
+                        self.tab.handlers.clear()
                         logger.info("BROWSER: JS check done. reloading")
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
-                await tab.reload()
+                await self.tab.reload()
 
-                if "Log in" not in await tab.get_content():
+                if "Log in" not in await self.tab.get_content():
                     logger.error("BROWSER: Did NOT pass JS check. This is not good")
                     raise LoginException("Didn't pass JS check")
 
             logger.info("BROWSER: getting cookies")
-            cookies = await browser.cookies.get_all()
+            cookies = await self.browser.cookies.get_all()
             for cookie in cookies:
                 if cookie.name != "reese84":
                     continue
@@ -98,13 +106,13 @@ class PtcAuth:
                 self.reese_expiration = int(cookie.expires)
                 # self.reese_expiration = int(time.time()) + 10
 
-            accept_input = await tab.wait_for("input#accept")
+            accept_input = await self.tab.wait_for("input#accept")
             logger.info("BROWSER: got login page")
 
             js_email = f'document.querySelector("input#email").value="{username}"'
             js_pass = f'document.querySelector("input#password").value="{password}"'
 
-            await tab.evaluate(js_email + ";" + js_pass)
+            await self.tab.evaluate(js_email + ";" + js_pass)
             logger.info("BROWSER: filled out login form")
 
             pokemongo_url_future = asyncio.get_running_loop().create_future()
@@ -114,18 +122,18 @@ class PtcAuth:
                 if url.startswith("pokemongo://"):
                     pokemongo_url_future.set_result(url)
 
-            tab.add_handler(nodriver.cdp.network.RequestWillBeSent, send_handler)
+            self.tab.add_handler(nodriver.cdp.network.RequestWillBeSent, send_handler)
 
             await accept_input.click()
             logger.info("BROWSER: submitted login form")
 
-            await tab.wait_for("html")
-            await tab.update_target()
+            await self.tab.wait_for("html")
+            await self.tab.update_target()
             logger.info("BROWSER: finished login")
 
-            if tab.target.url.startswith("https://access.pokemon.com/consent"):
+            if self.tab.target.url.startswith("https://access.pokemon.com/consent"):
                 logger.info("BROWSER: got consent screen")
-                consent_accept = await tab.wait_for("input#accept")
+                consent_accept = await self.tab.wait_for("input#accept")
                 if not consent_accept:
                     raise LoginException("no consent button")
                 await consent_accept.click()
@@ -133,22 +141,24 @@ class PtcAuth:
 
             try:
                 logger.info("BROWSER: waiting for pokemongo uri")
-                pokemongo_url = await asyncio.wait_for(pokemongo_url_future, timeout=15)
+                pokemongo_url = await asyncio.wait_for(pokemongo_url_future, timeout=20)
                 logger.info("BROWSER: got pokemongo uri")
             except asyncio.TimeoutError:
-                raise LoginException("Timeout while waiting for browser to finish")
+                raise LoginException("Timeout while waiting for pokemongo:// uri")
 
-            tab.handlers.clear()
+            self.tab.handlers.clear()
 
             login_code = self.__extract_login_code(pokemongo_url)
             if not login_code:
-                raise LoginException("no login code found")
+                raise LoginException("No login code found")
         except Exception as e:
-            logger.error(f"got {str(e)} during browser login")
-            browser.stop()
+            logger.error(f"Got {str(e)} during browser login - killing chrome")
+            self.browser.stop()
+            self.tab = None
+            self.browser = None
+            await self.kill_chrom_processes()
             raise e
 
-        browser.stop()
         return login_code
 
     async def serving_auth_the_old_fashioned_way(
@@ -227,6 +237,34 @@ class PtcAuth:
 
             logger.info("Got login code")
             return login_code
+
+    async def run_subprocess(self, cmd: str) -> tuple[str, str]:
+        process = await asyncio.create_subprocess_shell(
+            cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+
+        stdout, stderr = await process.communicate()
+
+        return stdout.decode(), stderr.decode()
+
+    async def kill_chrom_processes(self):
+        try:
+            processes, err = await self.run_subprocess("pgrep -fl chrom")
+
+            if err:
+                return logger.error(f"Error while pgrep: {err}")
+            process_lines = processes.strip().split("\n")
+
+            pids = [line.split()[0] for line in process_lines if "chrom" in line]
+
+            kill_out, kill_err = await self.run_subprocess("kill " + " ".join(pids))
+            if kill_err:
+                logger.error(f"Error while killing chrome processes: {err}")
+            else:
+                logger.info("Killed chrome processes")
+
+        except Exception as e:
+            logger.error(f"Error while killing chrome processes: {e.__class__.__name__}")
 
     def __extract_login_code(self, html) -> str | None:
         matches = re.search(r"pokemongo://state=(.*?)(?:,code=(.*?))?(?='|$)", html)
