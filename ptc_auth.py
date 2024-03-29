@@ -153,7 +153,10 @@ class PtcAuth:
                 raise LoginException("No login code found")
         except Exception as e:
             logger.error(f"Got {str(e)} during browser login - killing chrome")
-            self.browser.stop()
+            # self.browser.stop()
+            await self.browser.connection.aclose()
+            self.browser._process.terminate()
+            self.browser._process.wait()
             self.tab = None
             self.browser = None
             await self.kill_chrom_processes()
@@ -249,13 +252,14 @@ class PtcAuth:
 
     async def kill_chrom_processes(self):
         try:
-            processes, err = await self.run_subprocess("pgrep -fl chrom")
+            processes, err = await self.run_subprocess("pgrep -f chrom")
 
             if err:
                 return logger.error(f"Error while pgrep: {err}")
             process_lines = processes.strip().split("\n")
 
-            pids = [line.split()[0] for line in process_lines if "chrom" in line]
+            pids = [line for line in process_lines if "chrom" in line]
+            print(" ".join(pids))
 
             kill_out, kill_err = await self.run_subprocess("kill " + " ".join(pids))
             if kill_err:
