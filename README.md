@@ -8,7 +8,7 @@ As such, a docker installation is highly recommended, even if the rest of your s
 
 1. `git clone https://github.com/UnownHash/Xilriws-Public Xilriws && cd Xilriws`
 2. `cp docker-compose.yml.example docker-compose.yml && cp xilriws.json.example xilriws.json`
-3. `docker-compose up -d`
+3. `docker compose up -d`
 
 in your Dragonite config, add: 
 
@@ -23,8 +23,8 @@ something else accordingly.
 ### Update
 
 1. `git pull`
-2. `docker-compose pull`
-3. `docker-compose restart`
+2. `docker compose pull`
+3. `docker compose restart`
 
 you can change the "replicas" number to alter how many copies of the container will be spawned. traefik manages load balancing,
 and should work automatically. set this number in accordance with the avaliable RAM and CPU on your machine.
