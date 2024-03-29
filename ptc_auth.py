@@ -264,7 +264,7 @@ class PtcAuth:
                 logger.info("Killed chrome processes")
 
         except Exception as e:
-            logger.error(f"Error while killing chrome processes: {e.__class__.__name__}")
+            logger.exception("Error while killing chrome processes", e)
 
     def __extract_login_code(self, html) -> str | None:
         matches = re.search(r"pokemongo://state=(.*?)(?:,code=(.*?))?(?='|$)", html)
