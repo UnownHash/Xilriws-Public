@@ -7,5 +7,6 @@ build/*
 *.spec
 requirements.txt
 fingerprint-random*
+xilriws-cookie-delete*
 test
 *.js

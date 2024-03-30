@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import signal
+import sys
 from dataclasses import dataclass
 
 import uvicorn
@@ -38,13 +40,13 @@ async def auth_endpoint(request: Request, data: Data) -> dict[str, str]:
 
 
 async def main():
-    import signal
-    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-
     with open("config.json", "r") as f:
         config = json.load(f)
 
-    auth.extension_path = config.get("fingerprint_random_path", "/xilriws-fingerprint-random/")
+    auth.extension_paths = [
+        config.get("fingerprint_random_path", "/maltelogin/xilriws-fingerprint-random/"),
+        config.get("cookie_delete_path", "/maltelogin/xilriws-cookie-delete/"),
+    ]
     await auth.prepare()
 
     app = Litestar(route_handlers=[auth_endpoint])
@@ -56,8 +58,11 @@ async def main():
     )
     server = uvicorn.Server(server_config)
 
+    if sys.platform != "win32":
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
     version_logger = logging.getLogger("version")
-    version_logger.info(f"Running Xilriws v{VERSION}")
+    version_logger.info("Starting Xilriws")
 
     await server.serve()
 

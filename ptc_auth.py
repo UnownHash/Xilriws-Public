@@ -4,12 +4,12 @@ import asyncio
 import logging
 import re
 import time
-import subprocess
 
 import httpx
 import nodriver
 
 logger = logging.getLogger("browser")
+MAX_COOKIE_USES = 6
 
 
 class LoginException(Exception):
@@ -20,9 +20,10 @@ class PtcAuth:
     ACCESS_URL = "https://access.pokemon.com/"
     reese_cookie: str | None = None
     reese_expiration: int = 0
+    reese_uses: int = 0
     browser_lock: asyncio.Lock
     browser_event: asyncio.Event
-    extension_path = ""
+    extension_paths: list[str]
 
     browser: nodriver.Browser | None = None
     tab: nodriver.Tab | None = None
@@ -40,26 +41,29 @@ class PtcAuth:
         async with self.browser_lock:
             if not self.browser_event.is_set():
                 logger.info("reese cookie expired, getting a new one")
-                resp = await self.browser_auth(username, password, full_url)
+                try:
+                    resp = await self.browser_auth(username, password, full_url)
+                except Exception as e:
+                    logger.warning(f"Browser login failed. trying again once")
+                    resp = await self.browser_auth(username, password, full_url)
                 self.browser_event.set()
                 return resp
         return await self.serving_auth_the_old_fashioned_way(username, password, full_url=full_url, proxy=proxy)
 
     def cookie_is_ok(self) -> bool:
-        return self.reese_cookie and time.time() < self.reese_expiration
+        return self.reese_cookie and time.time() < self.reese_expiration and self.reese_uses < MAX_COOKIE_USES
 
     async def browser_auth(self, username: str, password: str, full_url: str) -> str:
         logger.info("BROWSER: starting")
         try:
             if not self.browser:
                 config = nodriver.Config(headless=True)
-                config.add_extension(self.extension_path)
+                for path in self.extension_paths:
+                    config.add_extension(path)
                 self.browser = await nodriver.start(config)
         except Exception as e:
             logger.error(f"got exception {str(e)} while starting browser")
             raise e
-
-        # await browser.cookies.clear()
 
         try:
             js_future = asyncio.get_running_loop().create_future()
@@ -91,7 +95,6 @@ class PtcAuth:
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
                 await self.tab.reload()
-
                 if "Log in" not in await self.tab.get_content():
                     logger.error("BROWSER: Did NOT pass JS check. This is not good")
                     raise LoginException("Didn't pass JS check")
@@ -103,8 +106,9 @@ class PtcAuth:
                     continue
                 logger.info("BROWSER: setting reese84 cookie")
                 self.reese_cookie = cookie.value
-                self.reese_expiration = int(cookie.expires)
-                # self.reese_expiration = int(time.time()) + 10
+                # self.reese_expiration = int(cookie.expires)
+                self.reese_expiration = int(time.time()) + 15 * 60
+                self.reese_uses = 0
 
             accept_input = await self.tab.wait_for("input#accept")
             logger.info("BROWSER: got login page")
@@ -139,14 +143,21 @@ class PtcAuth:
                 await consent_accept.click()
                 logger.info("BROWSER: gave consent")
 
+            # it might be possible to get the pokemongo:// uri at this point already,
+            # there's some 30x requests that contain them in their body
+
             try:
                 logger.info("BROWSER: waiting for pokemongo uri")
-                pokemongo_url = await asyncio.wait_for(pokemongo_url_future, timeout=20)
+                pokemongo_url = await asyncio.wait_for(pokemongo_url_future, timeout=15)
                 logger.info("BROWSER: got pokemongo uri")
             except asyncio.TimeoutError:
                 raise LoginException("Timeout while waiting for pokemongo:// uri")
 
             self.tab.handlers.clear()
+
+            new_tab = await self.tab.get(new_tab=True)
+            await self.tab.close()
+            self.tab = new_tab
 
             login_code = self.__extract_login_code(pokemongo_url)
             if not login_code:
@@ -154,13 +165,8 @@ class PtcAuth:
         except Exception as e:
             logger.error(f"Got {str(e)} during browser login - killing chrome")
             self.browser.stop()
-            # await self.tab.send(nodriver.cdp.browser.crash())
-            # await self.browser.connection.aclose()
-            # self.browser._process.terminate()
-            # await self.browser._process.wait()
             self.tab = None
             self.browser = None
-            await self.kill_chrom_processes()
             raise e
 
         return login_code
@@ -170,6 +176,8 @@ class PtcAuth:
     ) -> str:
         if not self.reese_cookie:
             raise LoginException("this error does not happen")
+
+        self.reese_uses += 1
 
         proxies = None
         if proxy:
@@ -250,26 +258,6 @@ class PtcAuth:
         stdout, stderr = await process.communicate()
 
         return stdout.decode(), stderr.decode()
-
-    async def kill_chrom_processes(self):
-        try:
-            processes, err = await self.run_subprocess("pgrep -f chrom")
-
-            if err:
-                return logger.error(f"Error while pgrep: {err}")
-            process_lines = processes.strip().split("\n")
-
-            pids = [line for line in process_lines if "chrom" in line]
-            print(" ".join(pids))
-
-            kill_out, kill_err = await self.run_subprocess("kill " + " ".join(pids))
-            if kill_err:
-                logger.error(f"Error while killing chrome processes: {err}")
-            else:
-                logger.info("Killed chrome processes")
-
-        except Exception as e:
-            logger.exception("Error while killing chrome processes", e)
 
     def __extract_login_code(self, html) -> str | None:
         matches = re.search(r"pokemongo://state=(.*?)(?:,code=(.*?))?(?='|$)", html)
