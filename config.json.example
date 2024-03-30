@@ -1,6 +1,4 @@
 {
   "host": "0.0.0.0",
-  "port": 5090,
-  "fingerprint_random_path": "/maltelogin/xilriws-fingerprint-random/",
-  "cookie_delete_path": "/maltelogin/xilriws-cookie-delete/"
+  "port": 5090
 }
