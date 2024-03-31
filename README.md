@@ -31,4 +31,3 @@ and should work automatically. set this number in accordance with the avaliable 
 
 the more copies of the container, the lower you can set login delay
 
-(this is a test, ignore)
