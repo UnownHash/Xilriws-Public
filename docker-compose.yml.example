@@ -12,8 +12,6 @@ services:
   xilriws-worker:
     image: ghcr.io/unownhash/xilriws-public:main
     restart: unless-stopped
-    volumes:
-      - ./xilriws.json:/xilriws/config.json
     expose:
     - "5090"
     labels:
