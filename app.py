@@ -39,7 +39,6 @@ class ResponseStatus(Enum):
 class ResponseData:
     status: str
     login_code: str = ""
-    random_code_verifier: None = None
 
 
 @post("/api/v1/login-code")
