@@ -7,7 +7,7 @@ As such, a docker installation is highly recommended, even if the rest of your s
 ## Installation
 
 1. `git clone https://github.com/UnownHash/Xilriws-Public Xilriws && cd Xilriws`
-2. `cp docker-compose.yml.example docker-compose.yml && cp xilriws.json.example xilriws.json`
+2. `cp docker-compose.yml.example docker-compose.yml`
 3. `docker compose up -d`
 
 in your Dragonite config, add: 
@@ -19,6 +19,8 @@ remote_auth_url = "http://xilriws:5090/api/v1/login-code"
 
 this assumes you have everything in the same docker network. if you're hosting it externally, change the hostname to
 something else accordingly.
+
+Optionally, you may `cp xilriws.json.example xilriws.json` to adjust certain parameters.
 
 ### Update
 
