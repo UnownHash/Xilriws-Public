@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "Cookie AutoDelete",
+    "description": "Name of the extension."
+  },
+  "notificationTitle": {
+    "message": "Cookies were deleted!",
+    "description": "Cookies were deleted!  Used in Notification Title."
+  },
+  "preferencesText": {
+    "message": "Beállítások",
+    "description": "Settings"
+  },
+  "versionText": {
+    "message": "$browser$ verzió",
+    "description": "Firefox version",
+    "placeholders": {
+      "browser": {
+        "content": "$1",
+        "example": "Firefox"
+      }
+    }
+  },
+  "contributeText": {
+    "message": "Hozzájárulás",
+    "description": "Contribute"
+  },
+  "domainPlaceholderText": {
+    "message": "example.com, aldomain.example.com, *. example.com",
+    "description": "Domain Expression"
+  }
+}
