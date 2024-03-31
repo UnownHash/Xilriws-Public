@@ -170,7 +170,7 @@ class PtcAuth:
                 pokemongo_url = await asyncio.wait_for(pokemongo_url_future, timeout=15)
                 logger.info("BROWSER: got pokemongo uri")
             except asyncio.TimeoutError:
-                await self.tab.update_target()
+                # await self.tab.update_target()
                 logger.info(
                     f"Please send this to Malte on Discord: {self.tab.target.url}\n{await self.tab.get_content()}"
                 )
