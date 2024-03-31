@@ -18,6 +18,7 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+          token: ${{ secrets.XILRIWS_RELEASE_CLASSIC }}
           submodules: true
 
       - name: Set up Python 3.9
