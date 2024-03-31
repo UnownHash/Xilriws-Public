@@ -13,6 +13,17 @@ MAX_COOKIE_USES = 6
 
 
 class LoginException(Exception):
+    """generic login exception, don't log the traceback"""
+    pass
+
+
+class BadLoginException(LoginException):
+    """don't retry logging in"""
+    pass
+
+
+class InvalidCredentials(BadLoginException):
+    """Invalid account credentials"""
     pass
 
 
@@ -43,9 +54,13 @@ class PtcAuth:
                 logger.info("reese cookie expired, getting a new one")
                 try:
                     resp = await self.browser_auth(username, password, full_url)
+                except BadLoginException as e:
+                    self.browser_event.set()
+                    raise e
                 except Exception as e:
-                    logger.warning(f"Browser login failed. trying again once")
+                    logger.warning(f"Browser login failed ({str(e)}). trying again once")
                     resp = await self.browser_auth(username, password, full_url)
+
                 self.browser_event.set()
                 return resp
         return await self.serving_auth_the_old_fashioned_way(username, password, full_url=full_url, proxy=proxy)
@@ -57,7 +72,7 @@ class PtcAuth:
         logger.info("BROWSER: starting")
         try:
             if not self.browser:
-                config = nodriver.Config(headless=True)
+                config = nodriver.Config(headless=False)
                 for path in self.extension_paths:
                     config.add_extension(path)
                 self.browser = await nodriver.start(config)
@@ -114,7 +129,8 @@ class PtcAuth:
             logger.info("BROWSER: got login page")
 
             js_email = f'document.querySelector("input#email").value="{username}"'
-            js_pass = f'document.querySelector("input#password").value="{password}"'
+            parsed_password = password.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$")
+            js_pass = f'document.querySelector("input#password").value="{parsed_password}"'
 
             await self.tab.evaluate(js_email + ";" + js_pass)
             logger.info("BROWSER: filled out login form")
@@ -135,13 +151,16 @@ class PtcAuth:
             await self.tab.update_target()
             logger.info("BROWSER: finished login")
 
-            if self.tab.target.url.startswith("https://access.pokemon.com/consent"):
+            if self.tab.target.url.endswith("/consent"):
                 logger.info("BROWSER: got consent screen")
                 consent_accept = await self.tab.wait_for("input#accept")
                 if not consent_accept:
                     raise LoginException("no consent button")
                 await consent_accept.click()
                 logger.info("BROWSER: gave consent")
+            elif self.tab.target.url.endswith("/login"):
+                content = await self.tab.get_content()
+                self.check_error_on_login_page(content)
 
             # it might be possible to get the pokemongo:// uri at this point already,
             # there's some 30x requests that contain them in their body
@@ -151,6 +170,10 @@ class PtcAuth:
                 pokemongo_url = await asyncio.wait_for(pokemongo_url_future, timeout=15)
                 logger.info("BROWSER: got pokemongo uri")
             except asyncio.TimeoutError:
+                await self.tab.update_target()
+                logger.info(
+                    f"Please send this to Malte on Discord: {self.tab.target.url}\n{await self.tab.get_content()}"
+                )
                 raise LoginException("Timeout while waiting for pokemongo:// uri")
 
             self.tab.handlers.clear()
@@ -162,6 +185,8 @@ class PtcAuth:
             login_code = self.__extract_login_code(pokemongo_url)
             if not login_code:
                 raise LoginException("No login code found")
+        except InvalidCredentials as e:
+            raise e
         except Exception as e:
             logger.error(f"Got {str(e)} during browser login - killing chrome")
             self.browser.stop()
@@ -232,6 +257,8 @@ class PtcAuth:
 
             if not login_code:
                 if "error-message" in login_resp.text:
+                    self.check_error_on_login_page(login_resp.text)
+                    logger.error(f"Please send this to Malte on Discord (error page after login)\n{login_resp.text}")
                     raise LoginException("Login failed, probably invalid credentials")
 
                 logger.info("Need to give consent (+1 extra PTC page)")
@@ -250,14 +277,13 @@ class PtcAuth:
             logger.info("Got login code")
             return login_code
 
-    async def run_subprocess(self, cmd: str) -> tuple[str, str]:
-        process = await asyncio.create_subprocess_shell(
-            cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-        )
-
-        stdout, stderr = await process.communicate()
-
-        return stdout.decode(), stderr.decode()
+    def check_error_on_login_page(self, content: str):
+        if "Your username or password is incorrect." in content:
+            logger.warning("BROWSER: Incorrect credentials")
+            raise InvalidCredentials("Incorrect account credentials")
+        elif "your account has been disabled for" in content:
+            logger.error("BROWSER: Account is temporarily disabled")
+            raise InvalidCredentials("Account temporarily disabled")
 
     def __extract_login_code(self, html) -> str | None:
         matches = re.search(r"pokemongo://state=(.*?)(?:,code=(.*?))?(?='|$)", html)

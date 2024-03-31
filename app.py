@@ -6,12 +6,13 @@ import logging
 import signal
 import sys
 from dataclasses import dataclass
+from enum import Enum
 
 import uvicorn
-from litestar import Litestar, post, Request
-from litestar.exceptions import HTTPException
+from litestar import Litestar, post, Request, Response
+from litestar.status_codes import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR, HTTP_200_OK
 
-from ptc_auth import PtcAuth
+from ptc_auth import PtcAuth, InvalidCredentials, LoginException
 
 VERSION = "0.2.0"
 
@@ -21,22 +22,40 @@ auth = PtcAuth()
 
 
 @dataclass
-class Data:
+class RequestData:
     username: str
     password: str
     proxy: str
     url: str
 
 
+class ResponseStatus(Enum):
+    SUCCESS = 1
+    ERROR = 2
+    INVALID = 3
+
+
+@dataclass
+class ResponseData:
+    status: str
+    login_code: str = ""
+    random_code_verifier: None = None
+
+
 @post("/api/v1/login-code")
-async def auth_endpoint(request: Request, data: Data) -> dict[str, str]:
+async def auth_endpoint(request: Request, data: RequestData) -> Response[ResponseData]:
     try:
         login_code = await auth.auth(data.username, data.password, data.url, data.proxy)
 
-        return {"login_code": login_code, "random_code_verifier": None}
+        return Response(ResponseData(login_code=login_code, status=ResponseStatus.SUCCESS.name), status_code=HTTP_200_OK)
+    except InvalidCredentials:
+        return Response(ResponseData(status=ResponseStatus.INVALID.name), status_code=HTTP_400_BAD_REQUEST)
+    except LoginException as e:
+        request.logger.error(f"Error: {str(e)}")
     except Exception as e:
         request.logger.exception(e)
-        HTTPException(detail=str(e), status_code=500)
+
+    return Response(ResponseData(status=ResponseStatus.ERROR.name), status_code=HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 async def main():
