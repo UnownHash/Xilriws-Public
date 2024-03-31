@@ -151,7 +151,7 @@ class PtcAuth:
             await self.tab.update_target()
             logger.info("BROWSER: finished login")
 
-            if self.tab.target.url.endswith("/consent"):
+            if "/consent" in self.tab.target.url:
                 logger.info("BROWSER: got consent screen")
                 consent_accept = await self.tab.wait_for("input#accept")
                 if not consent_accept:
