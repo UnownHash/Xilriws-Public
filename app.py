@@ -63,8 +63,8 @@ async def main():
         config = json.load(f)
 
     auth.extension_paths = [
-        config.get("fingerprint_random_path", "/maltelogin/xilriws-fingerprint-random/"),
-        config.get("cookie_delete_path", "/maltelogin/xilriws-cookie-delete/"),
+        config.get("fingerprint_random_path", "/xilriws/xilriws-fingerprint-random/"),
+        config.get("cookie_delete_path", "/xilriws/xilriws-cookie-delete/"),
     ]
     await auth.prepare()
 
