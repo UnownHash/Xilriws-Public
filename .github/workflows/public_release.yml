@@ -69,6 +69,7 @@ jobs:
         run: |
           cd xilriws-public
           git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/UnownHash/Xilriws-Public
+          git checkout main
           git commit -am "Xilriws release"
           git push
 
