@@ -72,7 +72,7 @@ class PtcAuth:
         logger.info("BROWSER: starting")
         try:
             if not self.browser:
-                config = nodriver.Config(headless=False)
+                config = nodriver.Config(headless=True)
                 for path in self.extension_paths:
                     config.add_extension(path)
                 self.browser = await nodriver.start(config)
@@ -101,7 +101,7 @@ class PtcAuth:
 
             html = await self.tab.get_content()
             if "Log in" not in html:
-                logger.info("BROWSER: Got Error 15 page")
+                logger.info("BROWSER: Got Error 15 page (this NOT an error! it's intended)")
                 if not js_future.done():
                     try:
                         await asyncio.wait_for(js_future, timeout=10)
