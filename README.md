@@ -20,7 +20,7 @@ remote_auth_url = "http://xilriws:5090/api/v1/login-code"
 this assumes you have everything in the same docker network. if you're hosting it externally, change the hostname to
 something else accordingly.
 
-Optionally, you may `cp xilriws.json.example xilriws.json` to adjust certain parameters.
+Optionally, you may `cp xilriws.json.example config.json` to adjust certain parameters.
 
 ### Update
 
