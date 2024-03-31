@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os.path
 import signal
 import sys
 from dataclasses import dataclass
@@ -58,8 +59,11 @@ async def auth_endpoint(request: Request, data: RequestData) -> Response[Respons
 
 
 async def main():
-    with open("config.json", "r") as f:
-        config = json.load(f)
+    if os.path.exists("config.json"):
+        with open("config.json", "r") as f:
+            config = json.load(f)
+    else:
+        config = {}
 
     auth.extension_paths = [
         config.get("fingerprint_random_path", "/xilriws/xilriws-fingerprint-random/"),
@@ -70,8 +74,8 @@ async def main():
     app = Litestar(route_handlers=[auth_endpoint])
     server_config = uvicorn.Config(
         app,
-        port=int(config["port"]),
-        host=config["host"],
+        port=config.get("port", 5090),
+        host=config.get("host", "0.0.0.0"),
         # log_config=None,
     )
     server = uvicorn.Server(server_config)
