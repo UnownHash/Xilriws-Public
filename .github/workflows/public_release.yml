@@ -18,7 +18,7 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-          submodules: 'recursive'
+          submodules: true
 
       - name: Set up Python 3.9
         uses: actions/setup-python@v4
@@ -47,7 +47,8 @@ jobs:
 
       - name: Update submodule
         run: |
-          git submodule update --init --recursive
+          git pull --recurse-submodules
+          git submodule update --remote --recursive
 
       - name: Commit maltelogin
         run: |
