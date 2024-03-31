@@ -16,6 +16,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          persist-credentials: false
+          fetch-depth: 0
           submodules: 'recursive'
 
       - name: Set up Python 3.9
@@ -43,7 +45,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
-      - name: Update Xilriws submodule
+      - name: Commit maltelogin
         run: |
           git add .
           git commit -m "Update xilriws submodule" --allow-empty
