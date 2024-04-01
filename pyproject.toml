@@ -10,6 +10,7 @@ python = ">=3.9,<3.13"
 nodriver = "^0.27rc3"
 litestar = {extras = ["standard"], version = "^2.7.0"}
 httpx = "^0.27.0"
+loguru = "^0.7.2"
 
 
 [tool.poetry.group.dev.dependencies]
