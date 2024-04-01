@@ -58,6 +58,7 @@ class CookieMonster:
 
     async def remove_cookie(self, cookie: ReeseCookie) -> None:
         await self.cookies.remove(cookie)
+        self.fill_event.set()
 
     async def fill_task(self):
         while True:

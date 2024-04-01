@@ -67,7 +67,7 @@ class Browser:
                         raise LoginException("Timeout on JS challenge")
                 await self.tab.reload()
                 if "log in" not in await self.tab.get_content():
-                    logger.error("BROWSER: Did NOT pass JS check. This is not good")
+                    logger.error("Didn't pass JS check")
                     raise LoginException("Didn't pass JS check")
 
             logger.info("Getting cookies from browser")
@@ -76,7 +76,7 @@ class Browser:
             for cookie in cookies:
                 if cookie.name != "reese84":
                     continue
-                logger.info("Got a reese84 cookie")
+                logger.info("Got a cookie")
                 value = cookie.value
 
             new_tab = await self.tab.get(new_tab=True)
