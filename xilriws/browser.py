@@ -57,7 +57,7 @@ class Browser:
 
             html = await self.tab.get_content()
             if "log in" not in html:
-                logger.info("Got Error 15 page (this NOT an error! it's intended)")
+                logger.info("Got Error 15 page (this is NOT an error! it's intended)")
                 if not js_future.done():
                     try:
                         await asyncio.wait_for(js_future, timeout=10)

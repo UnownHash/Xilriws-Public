@@ -23,6 +23,9 @@ class AwaitableSet(Generic[T]):
             self.cond.notify_all()
 
     async def remove(self, element: T) -> None:
+        if element not in self.set:
+            return
+
         async with self.cond:
             self.set.remove(element)
             self.cond.notify_all()
