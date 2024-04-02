@@ -116,7 +116,7 @@ class PtcAuth:
                         raise LoginException("No Login Code after consent, please check account")
                 return login_code
 
-            raise LoginException("Exceeded max retries during PTC auth")
+        raise LoginException("Exceeded max retries during PTC auth")
 
     def check_error_on_login_page(self, content: str):
         if "Your username or password is incorrect." in content:
