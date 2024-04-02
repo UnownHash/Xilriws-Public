@@ -1,17 +1,13 @@
 from __future__ import annotations
-from dataclasses import dataclass
 import time
 from .browser import Browser
 from loguru import logger
 import asyncio
+
+from .constants import EXPIRATION, MAX_USES, COOKIE_STORAGE
 from .task_creator import task_creator, AwaitableSet
 
 logger = logger.bind(name="Cookie")
-
-
-EXPIRATION = 18 * 60
-MAX_USES = 7
-COOKIE_STORAGE = 5
 
 
 class ReeseCookie:

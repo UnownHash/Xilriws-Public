@@ -6,11 +6,12 @@ from typing import TYPE_CHECKING
 import httpx
 from loguru import logger
 
+from .constants import ACCESS_URL, COOKIE_STORAGE
+
 if TYPE_CHECKING:
     from .reese_cookie import CookieMonster
 
 logger = logger.bind(name="PTC")
-ACCESS_URL = "https://access.pokemon.com/"
 
 
 class LoginException(Exception):
@@ -36,7 +37,7 @@ class PtcAuth:
         if proxy:
             proxies = {"http://": proxy, "https://": proxy}
 
-        attempts = 3
+        attempts = COOKIE_STORAGE + 1
         while attempts > 0:
             attempts -= 1
             cookie = await self.cookie_monster.get_reese_cookie()

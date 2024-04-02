@@ -1,6 +1,7 @@
 from __future__ import annotations
 import nodriver
-from .ptc import ACCESS_URL, LoginException
+from .ptc import LoginException
+from .constants import ACCESS_URL
 from loguru import logger
 import asyncio
 
