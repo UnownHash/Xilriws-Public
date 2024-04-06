@@ -18,9 +18,9 @@ class Browser:
 
     async def get_reese_cookie(self) -> str | None:
         logger.info("Browser starting")
-        try:
-            if not self.browser:
-                config = nodriver.Config(headless=HEADLESS)
+        if not self.browser:
+            config = nodriver.Config(headless=HEADLESS)
+            try:
                 for path in self.extension_paths:
                     config.add_extension(path)
                 self.browser = await nodriver.start(config)
@@ -29,13 +29,13 @@ class Browser:
                     f"{' '.join(self.browser.config())}"
                     "`"
                 )
-        except Exception as e:
-            logger.error(str(e))
-            logger.error(
-                f"Error while starting the browser. Please confirm you can start it manually by running "
-                f"`{self.browser.config.browser_executable_path}`"
-            )
-            return None
+            except Exception as e:
+                logger.error(str(e))
+                logger.error(
+                    f"Error while starting the browser. Please confirm you can start it manually by running "
+                    f"`{config.browser_executable_path}`"
+                )
+                return None
 
         try:
             js_future = asyncio.get_running_loop().create_future()
