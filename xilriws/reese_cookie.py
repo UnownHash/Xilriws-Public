@@ -60,13 +60,18 @@ class CookieMonster:
         while True:
             await self.fill_event.wait()
             logger.info("Filling cookie storage in the background")
-            while len(self.cookies) < COOKIE_STORAGE:
-                fresh_cookie = await self.__get_one_cookie()
-                logger.info(f"Cookie storage at {len(self.cookies)}/{COOKIE_STORAGE}")
 
-                if len(self.cookies) < COOKIE_STORAGE and fresh_cookie:
-                    await asyncio.sleep(1.1)
-                    # the extension clears cookies 1s after closing the tab. TODO: update the extension
+            try:
+                while len(self.cookies) < COOKIE_STORAGE:
+                    fresh_cookie = await self.__get_one_cookie()
+                    logger.info(f"Cookie storage at {len(self.cookies)}/{COOKIE_STORAGE}")
+
+                    if len(self.cookies) < COOKIE_STORAGE and fresh_cookie:
+                        await asyncio.sleep(1.1)
+                        # the extension clears cookies 1s after closing the tab. TODO: update the extension
+            except Exception as e:
+                logger.exception("unahdnled excpetion while filling cookie storage, please report", e)
+
             self.fill_event.clear()
 
     async def get_next_cookie(self) -> ReeseCookie:
