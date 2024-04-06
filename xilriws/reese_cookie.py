@@ -89,7 +89,7 @@ class CookieMonster:
         logger.info("Opening browser to get a cookie")
 
         time_since_last_cookie = time.time() - self.last_cookie_time
-        if 0 < time_since_last_cookie < 1.1:
+        if 0 <= time_since_last_cookie < 1.1:
             await asyncio.sleep(1.1 - time_since_last_cookie)
             # the extension clears cookies 1s after closing the tab. TODO: update the extension
 
