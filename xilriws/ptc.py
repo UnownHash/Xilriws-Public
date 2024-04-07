@@ -99,7 +99,11 @@ class PtcAuth:
 
                     logger.info("Calling CONSENT page")
 
-                    csrf_consent, challenge_consent = self.__extract_csrf_and_challenge(login_resp.text)
+                    try:
+                        csrf_consent, challenge_consent = self.__extract_csrf_and_challenge(login_resp.text)
+                    except LoginException:
+                        logger.error(f"Could not find a CSRF token for account {username} - it's probably unactivated")
+                        raise InvalidCredentials()
                     resp_consent = await client.post(
                         ACCESS_URL + "consent",
                         data={"challenge": challenge_consent, "_csrf": csrf_consent, "allow_submit": "Allow"},
