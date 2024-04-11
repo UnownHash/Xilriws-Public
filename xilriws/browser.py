@@ -1,9 +1,12 @@
 from __future__ import annotations
-import nodriver
-from .ptc import LoginException
-from .constants import ACCESS_URL
-from loguru import logger
+
 import asyncio
+
+import nodriver
+from loguru import logger
+
+from .constants import ACCESS_URL
+from .ptc import LoginException, get_url
 
 logger = logger.bind(name="Browser")
 HEADLESS = True
@@ -12,11 +15,18 @@ HEADLESS = True
 class Browser:
     browser: nodriver.Browser | None = None
     tab: nodriver.Tab | None = None
+    consecutive_failures = 0
 
     def __init__(self, extension_paths: list[str]):
         self.extension_paths: list[str] = extension_paths
 
     async def get_reese_cookie(self) -> str | None:
+        if self.consecutive_failures >= 30:
+            logger.critical(f"{self.consecutive_failures} consecutive failures in the browser! this is really bad")
+            await asyncio.sleep(60 * 30)
+            self.consecutive_failures -= 1
+            return None
+
         logger.info("Browser starting")
         if not self.browser:
             config = nodriver.Config(headless=HEADLESS)
@@ -54,7 +64,7 @@ class Browser:
                 self.tab = await self.browser.get()
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening PTC")
-            await self.tab.get(url=ACCESS_URL + "login")
+            await self.tab.get(url=get_url())
 
             html = await self.tab.get_content()
             if "log in" not in html:
@@ -67,7 +77,7 @@ class Browser:
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
                 await self.tab.reload()
-                if "log in" not in await self.tab.get_content():
+                if "Log in" not in await self.tab.get_content():
                     logger.error("Didn't pass JS check")
                     raise LoginException("Didn't pass JS check")
 
@@ -86,6 +96,7 @@ class Browser:
 
             if not value:
                 raise LoginException("Didn't find reese cookie in browser")
+            self.consecutive_failures = 0
             return value
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
@@ -93,6 +104,7 @@ class Browser:
             logger.exception("Exception during browser", e)
 
         logger.error("Error while getting cookie from browser, it will be restarted next time")
+        self.consecutive_failures += 1
         self.browser.stop()
         self.tab = None
         self.browser = None
