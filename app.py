@@ -28,6 +28,9 @@ nodriver_logger.setLevel(logging.CRITICAL)
 
 logger = logger.bind(name="Xilriws")
 
+if sys.platform != "win32":
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
 
 @dataclass
 class RequestData:
@@ -100,9 +103,6 @@ async def main():
     )
     server_config = uvicorn.Config(app, port=port, host=host, log_config=None)
     server = uvicorn.Server(server_config)
-
-    if sys.platform != "win32":
-        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     logger.info(f"Starting Xilriws on http://{host}:{port}")
 

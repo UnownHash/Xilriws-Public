@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-import base64
-import hashlib
-import random
 import re
 from typing import TYPE_CHECKING
-from urllib.parse import urlencode
 
 import httpx
 from loguru import logger
@@ -28,36 +24,6 @@ class InvalidCredentials(LoginException):
     """Invalid account credentials"""
 
     pass
-
-
-def __get_random_string(length: int) -> str:
-    output = ""
-    for _ in range(length):
-        output += random.choice("abcdefghijklmnopqrstuvwxyz0123456789")
-    return output
-
-
-def __challenge_from_code_verifier(code_verifier) -> str:
-    challenge_bin = hashlib.sha256(code_verifier.encode("utf-8")).digest()
-    return base64.urlsafe_b64encode(challenge_bin).decode("utf-8").rstrip("=")
-
-
-def get_url():
-    random_code_verifier: str = __get_random_string(86)
-    random_state: str = __get_random_string(24)
-
-    code_challenge = __challenge_from_code_verifier(random_code_verifier)
-
-    params = {
-        "state": random_state,
-        "scope": "openid offline email dob pokemon_go member_id username",
-        "redirect_uri": "https://www.pokemongolive.com/dl?app=pokemongo&dl_action=OPEN_LOGIN",
-        "client_id": "pokemon-go",
-        "response_type": "code",
-        "code_challenge": code_challenge,
-        "code_challenge_method": "S256",
-    }
-    return ACCESS_URL + "oauth2/auth?" + urlencode(params)
 
 
 class PtcAuth:

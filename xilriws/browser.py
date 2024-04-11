@@ -6,7 +6,7 @@ import nodriver
 from loguru import logger
 
 from .constants import ACCESS_URL
-from .ptc import LoginException, get_url
+from .ptc import LoginException
 
 logger = logger.bind(name="Browser")
 HEADLESS = True
@@ -64,7 +64,7 @@ class Browser:
                 self.tab = await self.browser.get()
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening PTC")
-            await self.tab.get(url=get_url())
+            await self.tab.get(url=ACCESS_URL + "login")
 
             html = await self.tab.get_content()
             if "log in" not in html:
@@ -77,7 +77,7 @@ class Browser:
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
                 await self.tab.reload()
-                if "Log in" not in await self.tab.get_content():
+                if "log in" not in await self.tab.get_content():
                     logger.error("Didn't pass JS check")
                     raise LoginException("Didn't pass JS check")
 
