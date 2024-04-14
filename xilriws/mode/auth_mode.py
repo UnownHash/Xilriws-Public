@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from litestar import Litestar, post, Response
+from litestar import Litestar, post, Response, Request
 from litestar.di import Provide
-from litestar.status_codes import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR, HTTP_200_OK
+from litestar.status_codes import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR, HTTP_200_OK, HTTP_403_FORBIDDEN
 from loguru import logger
 
 from xilriws.browser import Browser
@@ -37,7 +37,11 @@ class ResponseData:
 
 
 @post("/api/v1/login-code")
-async def auth_endpoint(ptc_auth: PtcAuth, data: RequestData) -> Response[ResponseData]:
+async def auth_endpoint(request: Request, ptc_auth: PtcAuth, data: RequestData) -> Response[ResponseData]:
+    if request.headers.get("User-Agent", "") not in ("Go-http-client/1.1", "axios/1.6.8"):
+        logger.critical("Please use Dragonite or TMS to connect to Xilriws")
+        return Response(ResponseData(status=ResponseStatus.ERROR.name), status_code=HTTP_403_FORBIDDEN)
+
     try:
         login_code = await ptc_auth.auth(data.username, data.password, data.url, data.proxy)
 

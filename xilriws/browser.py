@@ -51,7 +51,11 @@ class Browser:
         logger.info("Browser starting")
         if not self.browser:
             config = nodriver.Config(headless=HEADLESS)
-            config.add_argument("--user-agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'")
+            config.add_argument(
+                "--user-agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/123.0.0.0 Safari/537.36'"
+            )
             try:
                 for path in self.extension_paths:
                     config.add_extension(path)
@@ -223,7 +227,7 @@ class Browser:
                 reese_cookie=value,
                 create_tokens=recaptcha_tokens["create"],
                 activate_tokens=recaptcha_tokens["activate"],
-                timestamp=timestamp
+                timestamp=timestamp,
             )
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
