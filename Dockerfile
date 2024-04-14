@@ -10,15 +10,13 @@ RUN git clone https://github.com/ccev/xilriws-fingerprint-random.git /xilriws/xi
 RUN git clone https://github.com/ccev/xilriws-cookie-delete.git /xilriws/xilriws-cookie-delete
 
 RUN apt install -y software-properties-common
+RUN apt update -y
 RUN apt install -y python3 python3-pip
 RUN add-apt-repository ppa:savoury1/chromium
 RUN apt update && apt install -y chromium-browser
 
 RUN pip install poetry
-COPY app.py .
-COPY ptc_auth.py .
-COPY poetry.lock .
-COPY pyproject.toml .
+COPY . .
 RUN poetry install
 
 ENTRYPOINT ["poetry", "run", "litestar", "run"]

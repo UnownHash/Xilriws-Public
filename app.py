@@ -10,8 +10,8 @@ import sys
 import uvicorn
 from loguru import logger
 
-from xilriws.mode import CionMode, AuthMode
 from xilriws.browser import Browser
+from xilriws.mode import CionMode, AuthMode
 
 httpx_logger = logging.getLogger("httpx")
 httpx_logger.setLevel(logging.CRITICAL)
@@ -23,6 +23,9 @@ nodriver_logger.setLevel(logging.CRITICAL)
 logger = logger.bind(name="Xilriws")
 
 CION_MODE = True
+
+if sys.platform != "win32":
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 
 async def main():
@@ -52,9 +55,6 @@ async def main():
     app = mode.get_litestar()
     server_config = uvicorn.Config(app, port=port, host=host, log_config=None)
     server = uvicorn.Server(server_config)
-
-    if sys.platform != "win32":
-        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     logger.info(f"Starting Xilriws on http://{host}:{port}")
 

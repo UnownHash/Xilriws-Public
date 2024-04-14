@@ -29,6 +29,7 @@ class CookieMonster:
     def __init__(self, browser: Browser):
         self.browser: Browser = browser
         self.cookies: AwaitableSet[ReeseCookie] = AwaitableSet()
+        self.last_cookie_time: float = 0
 
     async def prepare(self):
         self.fill_event = asyncio.Event()
@@ -60,13 +61,14 @@ class CookieMonster:
         while True:
             await self.fill_event.wait()
             logger.info("Filling cookie storage in the background")
-            while len(self.cookies) < COOKIE_STORAGE:
-                fresh_cookie = await self.__get_one_cookie()
-                logger.info(f"Cookie storage at {len(self.cookies)}/{COOKIE_STORAGE}")
 
-                if len(self.cookies) < COOKIE_STORAGE and fresh_cookie:
-                    await asyncio.sleep(1.1)
-                    # the extension clears cookies 1s after closing the tab. TODO: update the extension
+            try:
+                while len(self.cookies) < COOKIE_STORAGE:
+                    await self.__get_one_cookie()
+                    logger.info(f"Cookie storage at {len(self.cookies)}/{COOKIE_STORAGE}")
+            except Exception as e:
+                logger.exception("unahdnled excpetion while filling cookie storage, please report", e)
+
             self.fill_event.clear()
 
     async def get_next_cookie(self) -> ReeseCookie:
@@ -85,7 +87,14 @@ class CookieMonster:
 
     async def __get_one_cookie(self) -> ReeseCookie | None:
         logger.info("Opening browser to get a cookie")
+
+        time_since_last_cookie = time.time() - self.last_cookie_time
+        if 0 <= time_since_last_cookie < 1.1:
+            await asyncio.sleep(1.1 - time_since_last_cookie)
+            # the extension clears cookies 1s after closing the tab. TODO: update the extension
+
         value = await self.browser.get_reese_cookie()
+        self.last_cookie_time = time.time()
 
         if not value:
             return None
