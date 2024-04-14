@@ -91,13 +91,19 @@ class Browser:
 
             logger.info("Getting cookies from browser")
             value: str | None = None
-            cookies = await self.browser.cookies.get_all()
-            for cookie in cookies:
-                if cookie.name != "reese84":
-                    continue
-                logger.info("Got a cookie")
-                value = cookie.value
-                self.last_reese = cookie
+            attempts = 3
+            while not value and attempts > 0:
+                attempts -= 1
+                cookies = await self.browser.cookies.get_all()
+                for cookie in cookies:
+                    if cookie.name != "reese84":
+                        continue
+                    logger.info("Got a cookie")
+                    value = cookie.value
+                    self.last_reese = cookie
+
+                if not value:
+                    await self.tab.wait(0.2)
 
             new_tab = await self.tab.get(new_tab=True)
             await self.tab.close()
