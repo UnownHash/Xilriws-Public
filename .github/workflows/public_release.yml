@@ -74,23 +74,22 @@ jobs:
       - name: Clone Cion
         run: |
           git clone https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
+          cp dist/xilriws_cion cion/xilriws
+          cd cion
 
       - name: Clone Xilriws-Public into cion
         run: |
-          rm -r -f cion/cion-xilriws
-          git clone https://github.com/UnownHash/Xilriws-Public cion/cion-xilriws
+          rm -r -f cion-xilriws
+          git clone https://github.com/UnownHash/Xilriws-Public.git cion-xilriws
 
       - name: Copy xilriws files
         run: |
-          cp dist/xilriws_cion cion/cion-xilriws/xilriws
-          cd cion
+          mv xilriws cion-xilriws/xilriws
           rm -r -f cion-xilriws/.git
           rm -r -f cion-xilriws/.github
 
       - name: Push to Cion
         run: |
-          ls -la
-          ls -la cion-xilriws
           git remote set-url origin https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
           git add cion-xilriws/*
           git commit -am "Update Cion-Xilriws" && git push || echo "No changes to commit"
