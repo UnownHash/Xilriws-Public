@@ -89,6 +89,8 @@ jobs:
 
       - name: Push to Cion
         run: |
+          ls -la
+          ls -la cion-xilriws
           git remote set-url origin https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
           git add cion-xilriws/*
           git commit -am "Update Cion-Xilriws" && git push || echo "No changes to commit"
