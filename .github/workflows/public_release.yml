@@ -85,7 +85,9 @@ jobs:
 
       - name: Copy xilriws files
         run: |
-          cp ../dist/xilriws_cion cion/xrilriws/xilriws
+          cd ..
+          cp dist/xilriws_cion cion/xilriws/xilriws
+          cd cion
 
       - name: Push to Cion
         run: |
