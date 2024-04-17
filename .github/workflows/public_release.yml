@@ -78,7 +78,7 @@ jobs:
 
       - name: Clone Xilriws-Public into cion
         run: |
-          git clone UnownHash/Xilriws-Public xilriws
+          git clone https://github.com/UnownHash/Xilriws-Public xilriws
 
       - name: Copy xilriws files
         run: |
