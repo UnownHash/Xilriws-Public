@@ -38,7 +38,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          poetry run pyinstaller app.py --onefile -n xilriws
+          poetry run pyinstaller app_cion.py --onefile -n xilriws
 
       - name: Prepare Git
         run: |
