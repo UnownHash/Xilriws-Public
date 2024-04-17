@@ -81,6 +81,8 @@ jobs:
           mv xilriws_cion cion-xilriws/xilriws
           rm -r -f cion-xilriws/.git
           rm -r -f cion-xilriws/.github
+          rm docker-compose.yml.example
+          rm docker-compose-no-traefik.yml.example
           git remote set-url origin https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
           git add cion-xilriws/
           git commit -am "Update Cion-Xilriws" && git push || echo "No changes to commit"
