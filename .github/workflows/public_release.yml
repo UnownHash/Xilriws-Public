@@ -71,19 +71,13 @@ jobs:
         run: |
           poetry run pyinstaller app_cion.py --onefile -n xilriws_cion
 
-      - name: Clone Cion
+      - name: Clone Cion & Xilriws
         run: |
           git clone https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
           cp dist/xilriws_cion cion/xilriws_cion
           cd cion
-
-      - name: Clone Xilriws-Public into cion
-        run: |
           rm -r -f cion-xilriws
           git clone https://github.com/UnownHash/Xilriws-Public.git cion-xilriws
-
-      - name: Copy xilriws files
-        run: |
           mv xilriws_cion cion-xilriws/xilriws
           rm -r -f cion-xilriws/.git
           rm -r -f cion-xilriws/.github
