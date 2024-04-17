@@ -67,10 +67,6 @@ jobs:
 #          git commit -am "Xilriws release" && git push || echo "No changes to commit"
 #          cd ..
 
-      - name: Build Cion-Mode with PyInstaller
-        run: |
-          poetry run pyinstaller app_cion.py --onefile -n xilriws_cion
-
       - name: Clone Cion
         run: |
           git clone https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
@@ -80,7 +76,12 @@ jobs:
         run: |
           git clone https://github.com/UnownHash/Xilriws-Public xilriws-repo
           cp -r xilriws-repo xilriws
-          rm -r xilriws/.git
+          rm -r -f xilriws/.git
+          rm -r -f xilriws/.github
+
+      - name: Build Cion-Mode with PyInstaller
+        run: |
+          poetry run pyinstaller ../app_cion.py --onefile -n xilriws_cion
 
       - name: Copy xilriws files
         run: |
