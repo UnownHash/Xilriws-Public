@@ -90,8 +90,8 @@ jobs:
       - name: Push to Cion
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
-          git add cion-xilriws/
-          git commit -am "Update xilriws submodule" && git push || echo "No changes to commit"
+          git add cion-xilriws/*
+          git commit -am "Update Cion-Xilriws" && git push || echo "No changes to commit"
 
 #      - name: Copy xilriws files
 #        run: |
