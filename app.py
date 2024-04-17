@@ -41,6 +41,7 @@ async def main(cion_mode: bool):
     )
 
     if cion_mode:
+        logger.info("Starting in Cion Mode")
         mode = CionMode(browser)
     else:
         mode = AuthMode(browser)
@@ -59,4 +60,5 @@ async def main(cion_mode: bool):
     await server.serve()
 
 
-asyncio.run(main(cion_mode=False))
+if __name__ == "__main__":
+    asyncio.run(main(cion_mode=False))

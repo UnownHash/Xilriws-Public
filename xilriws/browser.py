@@ -186,7 +186,11 @@ class Browser:
                 raise LoginException("Timeout on JS challenge")
 
             await self.tab.reload()
-            await self.tab.wait_for("iframe[title='reCAPTCHA']", timeout=20)
+            # TODO check for error 16
+            try:
+                await self.tab.wait_for("iframe[title='reCAPTCHA']", timeout=20)
+            except asyncio.TimeoutError:
+                raise LoginException("Timeout while waiting for captcha")
 
             obj, error = await self.tab.send(nodriver.cdp.runtime.evaluate(recaptcha.SRC))
 

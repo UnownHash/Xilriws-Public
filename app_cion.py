@@ -1,5 +1,5 @@
 import asyncio
 
-from app import main
+import app
 
-asyncio.run(main(cion_mode=True))
+asyncio.run(app.main(cion_mode=True))
