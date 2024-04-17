@@ -198,14 +198,14 @@ class Browser:
 
             obj, error = await self.tab.send(nodriver.cdp.runtime.evaluate(RECAPTCHA_JS))
 
-            logger.info("Initializing ReCaptcha Solver")
+            logger.info("Preparing token retreiving")
             obj, errors = await self.tab.send(nodriver.cdp.runtime.evaluate(LOAD_JS))
             obj: nodriver.cdp.runtime.RemoteObject
 
             if errors:
                 print(errors)
 
-            logger.info("Solving ReCaptchas")
+            logger.info("Getting tokens")
             r, errors = await self.tab.send(nodriver.cdp.runtime.await_promise(obj.object_id, return_by_value=True))
 
             recaptcha_tokens = r.value

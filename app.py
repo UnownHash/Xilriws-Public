@@ -22,13 +22,11 @@ nodriver_logger.setLevel(logging.CRITICAL)
 
 logger = logger.bind(name="Xilriws")
 
-CION_MODE = True
-
 if sys.platform != "win32":
     signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 
-async def main():
+async def main(cion_mode: bool):
     if os.path.exists("config.json"):
         with open("config.json", "r") as f:
             config: dict[str, str | int] = json.load(f)
@@ -42,7 +40,7 @@ async def main():
         ]
     )
 
-    if CION_MODE:
+    if cion_mode:
         mode = CionMode(browser)
     else:
         mode = AuthMode(browser)
@@ -61,4 +59,4 @@ async def main():
     await server.serve()
 
 
-asyncio.run(main())
+asyncio.run(main(cion_mode=False))

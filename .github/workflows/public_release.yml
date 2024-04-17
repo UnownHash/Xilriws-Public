@@ -7,6 +7,7 @@ env:
   REGISTRY: ghcr.io
   PUBLIC_REPO_NAME: UnownHash/Xilriws-Public
   PUBLIC_IMAGE_NAME: unownhash/xilriws-public
+  CION_IMAGE_NAME: ccev/cion-xilriws
 
 jobs:
   release:
@@ -35,63 +36,66 @@ jobs:
       - name: Generate requirements.txt
         run: poetry export -f requirements.txt --output requirements.txt
 
-      - name: Build with PyInstaller
-        run: |
-          poetry run pyinstaller app.py --onefile -n xilriws
+#      - name: Build with PyInstaller
+#        run: |
+#          poetry run pyinstaller app.py --onefile -n xilriws
 
       - name: Prepare Git
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
-      - name: Update submodule
-        run: |
-          git pull --recurse-submodules
-          git submodule update --remote --recursive
+#      - name: Update submodule
+#        run: |
+#          git pull --recurse-submodules
+#          git submodule update --remote --recursive
+#
+#      - name: Push to maltelogin
+#        run: |
+#          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/UnownHash/maltelogin
+#          git commit -am "Update xilriws submodule" && git push || echo "No changes to commit"
+#
+#      - name: Copy xilriws files
+#        run: |
+#          cp dist/xilriws xilriws-public/xilriws
+#
+#      - name: Push to Xilriws-Public
+#        run: |
+#          cd xilriws-public
+#          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/UnownHash/Xilriws-Public
+#          git checkout main
+#          git commit -am "Xilriws release" && git push || echo "No changes to commit"
+#          cd ..
 
-      - name: Push to maltelogin
+      - name: Build Cion-Mode with PyInstaller
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/UnownHash/maltelogin
-          git commit -am "Update xilriws submodule" && git push || echo "No changes to commit"
+          poetry run pyinstaller app_cion.py --onefile -n xilriws_cion
+
+      - name: Setup Cion Repo
+        run: |
+          git clone https://github.com/ccev/cion
+          cd cion
+
+      - name: Clone Xilriws-Public into cion
+        run: |
+          git clone UnownHash/Xilriws-Public xilriws
 
       - name: Copy xilriws files
         run: |
-          cp dist/xilriws xilriws-public/xilriws
+          cp ../dist/xilriws_cion cion/xrilriws/xilriws
 
-      - name: Push to Xilriws-Public
+      - name: Push to Cion
         run: |
-          cd xilriws-public
-          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/UnownHash/Xilriws-Public
-          git checkout main
-          git commit -am "Xilriws release" && git push || echo "No changes to commit"
+          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/ccev/cion
+          git commit -am "Update xilriws submodule" && git push || echo "No changes to commit"
 
-#  build-and-push-image:
-#    runs-on: ubuntu-latest
-#    permissions: read-all
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v4
-#      - name: Set up QEMU
-#        uses: docker/setup-qemu-action@v2
-#      - name: Set up Docker Buildx
-#        uses: docker/setup-buildx-action@v2
-#      - name: Log in to the Container registry
-#        uses: docker/login-action@v3
-#        with:
-#          registry: ${{ env.REGISTRY }}
-#          username: ${{ github.actor }}
-#          password: ${{ secrets.XILRIWS_RELEASE_CLASSIC }}
-#      - name: Build and push Docker image to public repository
-#        uses: docker/build-push-action@v5
-#        with:
-#          context: .
-#          file: Dockerfile
-#          platforms: linux/amd64,linux/arm64
-#          push: true
-#          build-args: |
-#            VERSION=${{ inputs.tag }}
-#          labels: |
-#            package-name=xilriws-public
-#          tags: |
-#            ${{ env.REGISTRY }}/${{ env.PUBLIC_IMAGE_NAME }}:${{ steps.check_image_tag.outputs.imagetag }}
-#            ${{ env.REGISTRY }}/${{ env.PUBLIC_IMAGE_NAME }}:${{ inputs.tag }}
+#      - name: Copy xilriws files
+#        run: |
+#          cp dist/xilriws xilriws-public/xilriws
+#
+#      - name: Push to Xilriws-Public
+#        run: |
+#          cd xilriws-public
+#          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/UnownHash/Xilriws-Public
+#          git checkout main
+#          git commit -am "Xilriws release" && git push || echo "No changes to commit"
