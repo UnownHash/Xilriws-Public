@@ -74,7 +74,7 @@ jobs:
       - name: Clone Cion
         run: |
           git clone https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
-          cp dist/xilriws_cion cion/xilriws
+          cp dist/xilriws_cion cion/xilriws_cion
           cd cion
 
       - name: Clone Xilriws-Public into cion
@@ -84,7 +84,7 @@ jobs:
 
       - name: Copy xilriws files
         run: |
-          mv xilriws cion-xilriws/xilriws
+          mv xilriws_cion cion-xilriws/xilriws
           rm -r -f cion-xilriws/.git
           rm -r -f cion-xilriws/.github
 
