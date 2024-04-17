@@ -36,36 +36,36 @@ jobs:
       - name: Generate requirements.txt
         run: poetry export -f requirements.txt --output requirements.txt
 
-#      - name: Build with PyInstaller
-#        run: |
-#          poetry run pyinstaller app.py --onefile -n xilriws
+      - name: Build with PyInstaller
+        run: |
+          poetry run pyinstaller app.py --onefile -n xilriws
 
       - name: Prepare Git
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
-#      - name: Update submodule
-#        run: |
-#          git pull --recurse-submodules
-#          git submodule update --remote --recursive
-#
-#      - name: Push to maltelogin
-#        run: |
-#          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/UnownHash/maltelogin
-#          git commit -am "Update xilriws submodule" && git push || echo "No changes to commit"
-#
-#      - name: Copy xilriws files
-#        run: |
-#          cp dist/xilriws xilriws-public/xilriws
-#
-#      - name: Push to Xilriws-Public
-#        run: |
-#          cd xilriws-public
-#          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/UnownHash/Xilriws-Public
-#          git checkout main
-#          git commit -am "Xilriws release" && git push || echo "No changes to commit"
-#          cd ..
+      - name: Update submodule
+        run: |
+          git pull --recurse-submodules
+          git submodule update --remote --recursive
+
+      - name: Push to maltelogin
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/UnownHash/maltelogin
+          git commit -am "Update xilriws submodule" && git push || echo "No changes to commit"
+
+      - name: Copy xilriws files
+        run: |
+          cp dist/xilriws xilriws-public/xilriws
+
+      - name: Push to Xilriws-Public
+        run: |
+          cd xilriws-public
+          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/UnownHash/Xilriws-Public
+          git checkout main
+          git commit -am "Xilriws release" && git push || echo "No changes to commit"
+          cd ..
 
       - name: Build Cion-Mode with PyInstaller
         run: |
@@ -85,14 +85,3 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
           git add cion-xilriws/
           git commit -am "Update Cion-Xilriws" && git push || echo "No changes to commit"
-
-#      - name: Copy xilriws files
-#        run: |
-#          cp dist/xilriws xilriws-public/xilriws
-#
-#      - name: Push to Xilriws-Public
-#        run: |
-#          cd xilriws-public
-#          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/UnownHash/Xilriws-Public
-#          git checkout main
-#          git commit -am "Xilriws release" && git push || echo "No changes to commit"
