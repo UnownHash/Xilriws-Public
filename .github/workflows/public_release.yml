@@ -76,13 +76,12 @@ jobs:
           git clone https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
           cp dist/xilriws_cion cion/xilriws_cion
           cd cion
-          rm -r -f cion-xilriws
-          git clone https://github.com/UnownHash/Xilriws-Public.git cion-xilriws
+          git clone https://github.com/UnownHash/Xilriws-Public.git xilriws-repo
+          cp -r xilriws-repo/xilriws-cookie-delete cion-xilriws/xilriws-cookie-delete
+          cp -r xilriws-repo/xilriws-fingerprint-random cion-xilriws/xilriws-fingerprint-random
+          cp xilriws-repo/Dockerfile cion-xilriws/Dockerfile
           mv xilriws_cion cion-xilriws/xilriws
-          rm -r -f cion-xilriws/.git
-          rm -r -f cion-xilriws/.github
-          rm docker-compose.yml.example
-          rm docker-compose-no-traefik.yml.example
+          rm -r -f xilriws-repo
           git remote set-url origin https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
           git add cion-xilriws/
           git commit -am "Update Cion-Xilriws" && git push || echo "No changes to commit"

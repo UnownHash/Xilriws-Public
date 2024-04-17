@@ -1,27 +1,19 @@
 from __future__ import annotations
-import nodriver
-from .ptc_auth import LoginException
-from .constants import ACCESS_URL, JOIN_URL
-from loguru import logger
-import asyncio
-from dataclasses import dataclass
-import time
 
+import asyncio
+import time
+from dataclasses import dataclass
 
 import nodriver
 from loguru import logger
 
 from .constants import ACCESS_URL
+from .constants import JOIN_URL
 from .ptc_auth import LoginException
+from .js import load, recaptcha
 
 logger = logger.bind(name="Browser")
 HEADLESS = True
-
-with open("recaptcha.js") as f:
-    RECAPTCHA_JS = f.read()
-
-with open("load.js") as f:
-    LOAD_JS = f.read()
 
 
 @dataclass
@@ -196,10 +188,10 @@ class Browser:
             await self.tab.reload()
             await self.tab.wait_for("iframe[title='reCAPTCHA']", timeout=20)
 
-            obj, error = await self.tab.send(nodriver.cdp.runtime.evaluate(RECAPTCHA_JS))
+            obj, error = await self.tab.send(nodriver.cdp.runtime.evaluate(recaptcha.SRC))
 
             logger.info("Preparing token retreiving")
-            obj, errors = await self.tab.send(nodriver.cdp.runtime.evaluate(LOAD_JS))
+            obj, errors = await self.tab.send(nodriver.cdp.runtime.evaluate(load.SRC))
             obj: nodriver.cdp.runtime.RemoteObject
 
             if errors:
