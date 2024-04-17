@@ -73,7 +73,7 @@ jobs:
 
       - name: Setup Cion Repo
         run: |
-          git clone https://github.com/ccev/cion
+          git clone https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
           cd cion
 
       - name: Clone Xilriws-Public into cion
@@ -86,7 +86,7 @@ jobs:
 
       - name: Push to Cion
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.XILRIWS_RELEASE_CLASSIC }}@github.com/ccev/cion
+          git remote set-url origin https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
           git commit -am "Update xilriws submodule" && git push || echo "No changes to commit"
 
 #      - name: Copy xilriws files
