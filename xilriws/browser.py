@@ -62,7 +62,7 @@ class Browser:
                 logger.error(str(e))
                 logger.error(
                     f"Error while starting the browser. Please confirm you can start it manually by running "
-                    f"`{self.browser.config.browser_executable_path}`"
+                    f"`{config.browser_executable_path}`"
                 )
                 raise e
 
