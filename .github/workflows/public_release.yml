@@ -74,18 +74,17 @@ jobs:
       - name: Clone Cion
         run: |
           git clone https://x-access-token:${{ secrets.CION_REPO_ACCESS }}@github.com/ccev/cion
-          cd cion
 
       - name: Clone Xilriws-Public into cion
         run: |
-          git clone https://github.com/UnownHash/Xilriws-Public xilriws-repo
-          cp -r xilriws-repo xilriws
-          rm -r -f xilriws/.git
-          rm -r -f xilriws/.github
+          git clone https://github.com/UnownHash/Xilriws-Public cion/xilriws-repo
+          cp -r cion/xilriws-repo cion/xilriws
+          rm -r -f cion/xilriws/.git
+          rm -r -f cion/xilriws/.github
+          rm -r -f cion/xilriws-repo
 
       - name: Copy xilriws files
         run: |
-          cd ..
           cp dist/xilriws_cion cion/xilriws/xilriws
           cd cion
 
