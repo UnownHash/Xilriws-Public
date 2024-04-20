@@ -85,5 +85,5 @@ class ProxyDistributor:
             await client.send(message)
 
     async def start(self):
-        async with websockets.serve(self.echo, "localhost", 9091):
+        async with websockets.serve(self.echo, "127.0.0.1", 9091):
             await asyncio.Future()
