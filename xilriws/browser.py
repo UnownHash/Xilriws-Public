@@ -11,6 +11,7 @@ from .constants import ACCESS_URL
 from .constants import JOIN_URL
 from .ptc_auth import LoginException
 from .js import load, recaptcha
+from .proxy import ProxyDistributor, Proxy
 
 logger = logger.bind(name="Browser")
 HEADLESS = True
@@ -30,8 +31,9 @@ class Browser:
     consecutive_failures = 0
     last_reese: nodriver.cdp.network.CookieParam | None = None
 
-    def __init__(self, extension_paths: list[str]):
+    def __init__(self, extension_paths: list[str], proxies: ProxyDistributor):
         self.extension_paths: list[str] = extension_paths
+        self.proxies = proxies
 
     async def start_browser(self):
         if self.consecutive_failures >= 30:
@@ -66,7 +68,7 @@ class Browser:
                 )
                 raise e
 
-    async def get_reese_cookie(self) -> str | None:
+    async def get_reese_cookie(self, proxy: Proxy) -> str | None:
         try:
             await self.start_browser()
         except Exception:
@@ -92,6 +94,7 @@ class Browser:
 
             # await self.tab.set_window_size(0, 0, 720, 1080)
 
+            await self.proxies.change_proxy()
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening PTC")
             await self.tab.get(url=ACCESS_URL + "login")
@@ -109,12 +112,12 @@ class Browser:
                 await self.tab.reload()
                 new_html = await self.tab.get_content()
                 if "log in" not in new_html.lower():
-                    logger.error("Didn't pass JS check")
-                    raise LoginException("Didn't pass JS check")
+                    proxy.use()
+                    raise LoginException("Didn't pass JS check, switching proxies in next run")
 
             logger.info("Getting cookies from browser")
             value: str | None = None
-            attempts = 3
+            attempts = 10
             while not value and attempts > 0:
                 attempts -= 1
                 cookies = await self.browser.cookies.get_all()
@@ -126,20 +129,21 @@ class Browser:
                     self.last_reese = cookie
 
                 if not value:
-                    await self.tab.wait(0.2)
+                    await self.tab.wait(0.3)
+
+            if not value:
+                raise LoginException("Didn't find reese cookie in browser")
 
             new_tab = await self.tab.get(new_tab=True)
             await self.tab.close()
             self.tab = new_tab
 
-            if not value:
-                raise LoginException("Didn't find reese cookie in browser")
             self.consecutive_failures = 0
             return value
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
             self.consecutive_failures += 1
-            await asyncio.sleep(3)
+            await asyncio.sleep(1.5)
             return None
         except Exception as e:
             logger.exception("Exception in browser", e)
@@ -173,6 +177,11 @@ class Browser:
             logger.info("Opening tab")
             if not self.tab:
                 self.tab = await self.browser.get()
+
+            # test = await self.tab.send(nodriver.cdp.target.create_browser_context(dispose_on_detach=True))
+            # print(test)
+
+            await self.proxies.change_proxy()
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening Join page")
             await self.tab.get(url=JOIN_URL + "login")
@@ -186,7 +195,7 @@ class Browser:
                 raise LoginException("Timeout on JS challenge")
 
             await self.tab.reload()
-            # TODO check for error 16
+            # TODO check for error 16, mark proxies as dead
             try:
                 await self.tab.wait_for("iframe[title='reCAPTCHA']", timeout=20)
             except asyncio.TimeoutError:

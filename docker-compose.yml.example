@@ -5,7 +5,8 @@ services:
     container_name: maltelogin
     restart: unless-stopped
     volumes:
-      - ./config.json:/maltelogin/config.json
+      - ./config.json:/xilriws/config.json
+      - ./proxies.txt:/xilriws/proxies.txt
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     #ports:

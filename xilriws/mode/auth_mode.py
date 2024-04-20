@@ -12,6 +12,8 @@ from xilriws.browser import Browser
 from xilriws.ptc_auth import PtcAuth, LoginException, InvalidCredentials
 from xilriws.reese_cookie import CookieMonster
 from .basic_mode import BasicMode
+from xilriws.proxy import ProxyDistributor, Proxy
+from xilriws.proxy_dispenser import ProxyDispenser
 
 logger = logger.bind(name="Xilriws")
 
@@ -62,8 +64,8 @@ async def auth_endpoint(request: Request, ptc_auth: PtcAuth, data: RequestData) 
 
 
 class AuthMode(BasicMode):
-    def __init__(self, browser: Browser):
-        self.cookie_monster = CookieMonster(browser)
+    def __init__(self, browser: Browser, proxies: ProxyDistributor, proxy_dispenser: ProxyDispenser):
+        self.cookie_monster = CookieMonster(browser, proxies, proxy_dispenser)
         self.ptc_auth = PtcAuth(self.cookie_monster)
 
     async def prepare(self) -> None:

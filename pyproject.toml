@@ -11,6 +11,7 @@ nodriver = "^0.27rc3"
 litestar = {extras = ["standard"], version = "^2.7.0"}
 httpx = "^0.27.0"
 loguru = "^0.7.2"
+websockets = "^12.0"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -6,6 +6,8 @@ import asyncio
 
 from .constants import EXPIRATION, MAX_USES, COOKIE_STORAGE
 from .task_creator import task_creator, AwaitableSet
+from .proxy import ProxyDistributor, Proxy
+from .proxy_dispenser import ProxyDispenser
 
 logger = logger.bind(name="Cookie")
 
@@ -26,10 +28,12 @@ class ReeseCookie:
 class CookieMonster:
     fill_event: asyncio.Event
 
-    def __init__(self, browser: Browser):
+    def __init__(self, browser: Browser, proxies: ProxyDistributor, proxy_dispenser: ProxyDispenser):
         self.browser: Browser = browser
         self.cookies: AwaitableSet[ReeseCookie] = AwaitableSet()
         self.last_cookie_time: float = 0
+        self.proxies = proxies
+        self.proxy_dispenser = proxy_dispenser
 
     async def prepare(self):
         self.fill_event = asyncio.Event()
@@ -64,7 +68,9 @@ class CookieMonster:
 
             try:
                 while len(self.cookies) < COOKIE_STORAGE:
-                    await self.__get_one_cookie()
+                    proxy = await self.proxy_dispenser.get_auth_proxy()
+                    await self.proxies.change_proxy(proxy)
+                    await self.__get_one_cookie(proxy)
                     logger.info(f"Cookie storage at {len(self.cookies)}/{COOKIE_STORAGE}")
             except Exception as e:
                 logger.exception("unahdnled excpetion while filling cookie storage, please report", e)
@@ -85,7 +91,7 @@ class CookieMonster:
 
             return next_cookie
 
-    async def __get_one_cookie(self) -> ReeseCookie | None:
+    async def __get_one_cookie(self, proxy: Proxy) -> ReeseCookie | None:
         logger.info("Opening browser to get a cookie")
 
         time_since_last_cookie = time.time() - self.last_cookie_time
@@ -93,7 +99,7 @@ class CookieMonster:
             await asyncio.sleep(1.1 - time_since_last_cookie)
             # the extension clears cookies 1s after closing the tab. TODO: update the extension
 
-        value = await self.browser.get_reese_cookie()
+        value = await self.browser.get_reese_cookie(proxy)
         self.last_cookie_time = time.time()
 
         if not value:

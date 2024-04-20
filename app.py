@@ -12,6 +12,9 @@ from loguru import logger
 
 from xilriws.browser import Browser
 from xilriws.mode import CionMode, AuthMode
+from xilriws.proxy import ProxyDistributor
+from xilriws.proxy_dispenser import ProxyDispenser
+from xilriws.task_creator import task_creator
 
 httpx_logger = logging.getLogger("httpx")
 httpx_logger.setLevel(logging.CRITICAL)
@@ -19,6 +22,8 @@ uvicorn_logger = logging.getLogger("uvicorn")
 uvicorn_logger.setLevel(logging.CRITICAL)
 nodriver_logger = logging.getLogger("nodriver")
 nodriver_logger.setLevel(logging.CRITICAL)
+ws_logger = logging.getLogger("websockets")
+ws_logger.setLevel(logging.CRITICAL)
 
 logger = logger.bind(name="Xilriws")
 
@@ -33,18 +38,24 @@ async def main(cion_mode: bool):
     else:
         config = {}
 
+    proxies = ProxyDistributor()
+    task_creator.create_task(proxies.start())
+
     browser = Browser(
         [
             config.get("fingerprint_random_path", "/xilriws/xilriws-fingerprint-random/"),
             config.get("cookie_delete_path", "/xilriws/xilriws-cookie-delete/"),
-        ]
+            config.get("proxy", "/xilriws/xilriws-proxy")
+        ],
+        proxies
     )
 
     if cion_mode:
         logger.info("Starting in Cion Mode")
-        mode = CionMode(browser)
+        mode = CionMode(browser, proxies)
     else:
-        mode = AuthMode(browser)
+        proxy_dispenser = ProxyDispenser(config.get("proxies_list_path", "/xilriws/proxies.txt"))
+        mode = AuthMode(browser, proxies, proxy_dispenser)
 
     await mode.prepare()
 
