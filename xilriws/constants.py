@@ -5,4 +5,4 @@ JOIN_URL = "https://join.pokemon.com/"
 
 EXPIRATION = 18 * 60
 MAX_USES = 7
-COOKIE_STORAGE = 100
+COOKIE_STORAGE = 1
