@@ -7,8 +7,9 @@ As such, a docker installation is highly recommended, even if the rest of your s
 ## Installation
 
 1. `git clone https://github.com/UnownHash/Xilriws-Public Xilriws && cd Xilriws`
-2. `cp docker-compose.yml.example docker-compose.yml`
-3. `docker compose up -d`
+2. Create a `proxies.txt` file. Each line should have one proxy url. (i.e. `ip:port` or `http://user:pass@ip:port`)
+3. `cp docker-compose.yml.example docker-compose.yml`
+4. `docker compose up -d`
 
 in your Dragonite config, add: 
 
