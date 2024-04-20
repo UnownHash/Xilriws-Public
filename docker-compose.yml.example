@@ -14,6 +14,8 @@ services:
     restart: unless-stopped
     expose:
     - "5090"
+    volumes:
+      - ./proxies.txt:/xilriws/proxies.txt
     labels:
       - traefik.http.routers.xilriws.rule=HostRegexp(`{catchall:.*}`)
       - traefik.enable=true

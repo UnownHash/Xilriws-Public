@@ -4,5 +4,8 @@ services:
   xilriws:
     image: ghcr.io/unownhash/xilriws-public:main
     restart: unless-stopped
+    volumes:
+      - ./proxies.txt:/xilriws/proxies.txt
     ports:
     - "5090:5090"
+

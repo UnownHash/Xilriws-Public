@@ -1,0 +1,18 @@
+{
+    "manifest_version": 2,
+    "name": "xilriws-proxy",
+    "version": "1.0",
+    "permissions": [
+        "proxy",
+        "tabs",
+        "unlimitedStorage",
+        "storage",
+        "<all_urls>",
+        "webRequest",
+        "webRequestBlocking",
+        "devtools"
+    ],
+    "background": {
+        "scripts": ["background.js"]
+      }
+}
