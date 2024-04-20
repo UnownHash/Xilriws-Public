@@ -8,6 +8,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt install -y git-all
 RUN git clone https://github.com/ccev/xilriws-fingerprint-random.git /xilriws/xilriws-fingerprint-random
 RUN git clone https://github.com/ccev/xilriws-cookie-delete.git /xilriws/xilriws-cookie-delete
+RUN git clone https://github.com/ccev/xilriws-proxy.git /xilriws/xilriws-proxy
 
 RUN apt install -y software-properties-common
 RUN apt update -y
