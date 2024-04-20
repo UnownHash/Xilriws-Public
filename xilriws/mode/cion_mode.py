@@ -13,25 +13,25 @@ from xilriws.proxy import ProxyDistributor, Proxy
 
 logger = logger.bind(name="Xilriws")
 
-PROXIES = """38.162.8.113:3128
-154.6.97.155:3128
-38.162.21.83:3128
-38.162.0.33:3128
-38.162.31.151:3128
-38.162.29.43:3128
-38.162.7.136:3128
-38.162.13.227:3128
-38.162.9.177:3128
-38.162.12.167:3128
-154.6.98.67:3128
-89.213.231.225:3128
-38.162.11.226:3128""".strip()
-
-current_i = [0]
+# PROXIES = """38.162.8.113:3128
+# 154.6.97.155:3128
+# 38.162.21.83:3128
+# 38.162.0.33:3128
+# 38.162.31.151:3128
+# 38.162.29.43:3128
+# 38.162.7.136:3128
+# 38.162.13.227:3128
+# 38.162.9.177:3128
+# 38.162.12.167:3128
+# 154.6.98.67:3128
+# 89.213.231.225:3128
+# 38.162.11.226:3128""".strip()
+#
+# current_i = [0]
 all_proxies = []
-for raw_proxy in PROXIES.split("\n"):
-    host, port = raw_proxy.split(":")
-    all_proxies.append(Proxy(host, int(port), None, None))
+# for raw_proxy in PROXIES.split("\n"):
+#     host, port = raw_proxy.split(":")
+#     all_proxies.append(Proxy(host, int(port), None, None))
 
 
 @get("/api/v1/cion")

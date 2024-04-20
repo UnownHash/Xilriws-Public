@@ -30,12 +30,12 @@ class PtcAuth:
     def __init__(self, cookie_monster: CookieMonster):
         self.cookie_monster = cookie_monster
 
-    async def auth(self, username: str, password: str, full_url: str, proxy: str | None = None) -> str:
+    async def auth(self, username: str, password: str, full_url: str) -> str:
         logger.info(f"Starting auth for {username}")
 
-        proxies = None
-        if proxy:
-            proxies = {"http://": proxy, "https://": proxy}
+        # proxies = None
+        # if proxy:
+        #     proxies = {"http://": proxy, "https://": proxy}
 
         attempts = COOKIE_STORAGE + 1
         while attempts > 0:
@@ -48,20 +48,26 @@ class PtcAuth:
                     "Accept-Language": "en-us",
                     "Connection": "keep-alive",
                     "Accept-Encoding": "gzip, deflate, br",
-                    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 "
-                    "(KHTML, like Gecko) Version/14.0.2 Mobile/15E148 Safari/604.1",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/123.0.0.0 Safari/537.36",
                 },
                 follow_redirects=True,
                 verify=False,
                 timeout=10,
-                proxies=proxies,
-                cookies={"reese84": cookie.value},
+                proxies=cookie.proxy,
+                cookies=cookie.cookies,
             ) as client:
                 logger.info("Calling OAUTH page")
 
-                resp = await client.get(full_url)
+                try:
+                    resp = await client.get(full_url)
+                except Exception as e:
+                    logger.error(f"Error {str(e)} during OAUTH")
+                    continue
 
                 if resp.status_code == 403:
+                    print(resp.text)
                     logger.info("Cookie expired. Invalidating and trying again")
                     await self.cookie_monster.remove_cookie(cookie)
                     continue
@@ -73,11 +79,15 @@ class PtcAuth:
 
                 logger.info("Calling LOGIN page")
 
-                login_resp = await client.post(
-                    ACCESS_URL + "login",
-                    headers={"Content-Type": "application/x-www-form-urlencoded"},
-                    data={"_csrf": csrf, "challenge": challenge, "email": username, "password": password},
-                )
+                try:
+                    login_resp = await client.post(
+                        ACCESS_URL + "login",
+                        headers={"Content-Type": "application/x-www-form-urlencoded"},
+                        data={"_csrf": csrf, "challenge": challenge, "email": username, "password": password},
+                    )
+                except Exception as e:
+                    logger.error(f"Error {str(e)} during LOGIN")
+                    continue
 
                 if login_resp.status_code == 403:
                     logger.info("Cookie expired. Invalidating and trying again")
@@ -104,10 +114,15 @@ class PtcAuth:
                     except LoginException:
                         logger.error(f"Could not find a CSRF token for account {username} - it's probably unactivated")
                         raise InvalidCredentials()
-                    resp_consent = await client.post(
-                        ACCESS_URL + "consent",
-                        data={"challenge": challenge_consent, "_csrf": csrf_consent, "allow_submit": "Allow"},
-                    )
+
+                    try:
+                        resp_consent = await client.post(
+                            ACCESS_URL + "consent",
+                            data={"challenge": challenge_consent, "_csrf": csrf_consent, "allow_submit": "Allow"},
+                        )
+                    except Exception as e:
+                        logger.error(f"Error {str(e)} during CONSENT")
+                        continue
 
                     if resp_consent.status_code == 403:
                         logger.info("Cookie expired. Invalidating and trying again")

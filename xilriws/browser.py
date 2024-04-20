@@ -12,6 +12,7 @@ from .constants import JOIN_URL
 from .ptc_auth import LoginException
 from .js import load, recaptcha
 from .proxy import ProxyDistributor, Proxy
+from .reese_cookie import ReeseCookie
 
 logger = logger.bind(name="Browser")
 HEADLESS = True
@@ -29,7 +30,7 @@ class Browser:
     browser: nodriver.Browser | None = None
     tab: nodriver.Tab | None = None
     consecutive_failures = 0
-    last_reese: nodriver.cdp.network.CookieParam | None = None
+    last_cookies: [nodriver.cdp.network.CookieParam] | None = None
 
     def __init__(self, extension_paths: list[str], proxies: ProxyDistributor):
         self.extension_paths: list[str] = extension_paths
@@ -68,7 +69,7 @@ class Browser:
                 )
                 raise e
 
-    async def get_reese_cookie(self, proxy: Proxy) -> str | None:
+    async def get_reese_cookie(self, proxy: Proxy) -> ReeseCookie | None:
         try:
             await self.start_browser()
         except Exception:
@@ -89,12 +90,13 @@ class Browser:
             logger.info("Opening tab")
             if not self.tab:
                 self.tab = await self.browser.get()
-            if self.last_reese:
-                await self.browser.cookies.set_all([self.last_reese])
+            if self.last_cookies:
+                await self.browser.cookies.set_all(self.last_cookies)
 
             # await self.tab.set_window_size(0, 0, 720, 1080)
 
             await self.proxies.change_proxy()
+            proxy = self.proxies.current_proxy
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening PTC")
             await self.tab.get(url=ACCESS_URL + "login")
@@ -112,24 +114,28 @@ class Browser:
                 await self.tab.reload()
                 new_html = await self.tab.get_content()
                 if "log in" not in new_html.lower():
+                    await self.tab.wait(10000)
                     proxy.use()
                     raise LoginException("Didn't pass JS check, switching proxies in next run")
 
             logger.info("Getting cookies from browser")
             value: str | None = None
+            all_cookies: dict[str, str] = {}
             attempts = 10
             while not value and attempts > 0:
                 attempts -= 1
                 cookies = await self.browser.cookies.get_all()
                 for cookie in cookies:
-                    if cookie.name != "reese84":
+                    if cookie.name == "reese84":
+                        logger.info("Got a cookie")
+                        value = cookie.value
                         continue
-                    logger.info("Got a cookie")
-                    value = cookie.value
-                    self.last_reese = cookie
 
                 if not value:
                     await self.tab.wait(0.3)
+                else:
+                    all_cookies = {c.name: c.value for c in cookies}
+                    self.last_cookies = cookies
 
             if not value:
                 raise LoginException("Didn't find reese cookie in browser")
@@ -139,7 +145,7 @@ class Browser:
             self.tab = new_tab
 
             self.consecutive_failures = 0
-            return value
+            return ReeseCookie(all_cookies, proxy.full_url.geturl())
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
             self.consecutive_failures += 1

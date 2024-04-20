@@ -1,22 +1,29 @@
 from __future__ import annotations
-import time
-from .browser import Browser
-from loguru import logger
+
 import asyncio
+import time
+from typing import TYPE_CHECKING
+
+from loguru import logger
 
 from .constants import EXPIRATION, MAX_USES, COOKIE_STORAGE
-from .task_creator import task_creator, AwaitableSet
 from .proxy import ProxyDistributor, Proxy
 from .proxy_dispenser import ProxyDispenser
+from .task_creator import task_creator, AwaitableSet
+
+if TYPE_CHECKING:
+    from .browser import Browser
 
 logger = logger.bind(name="Cookie")
 
 
 class ReeseCookie:
-    def __init__(self, value: str):
-        self.value: str = value
+    def __init__(self, cookies: dict[str, str], proxy: str):
+        self.value: str = "value"
         self.expiration: float = time.time() + EXPIRATION
         self.uses: int = 0
+        self.cookies = cookies
+        self.proxy = proxy
 
     def is_good(self) -> bool:
         return time.time() < self.expiration and self.uses < MAX_USES
@@ -69,7 +76,7 @@ class CookieMonster:
             try:
                 while len(self.cookies) < COOKIE_STORAGE:
                     proxy = await self.proxy_dispenser.get_auth_proxy()
-                    await self.proxies.change_proxy(proxy)
+                    self.proxies.set_next_proxy(proxy)
                     await self.__get_one_cookie(proxy)
                     logger.info(f"Cookie storage at {len(self.cookies)}/{COOKIE_STORAGE}")
             except Exception as e:
@@ -99,13 +106,12 @@ class CookieMonster:
             await asyncio.sleep(1.1 - time_since_last_cookie)
             # the extension clears cookies 1s after closing the tab. TODO: update the extension
 
-        value = await self.browser.get_reese_cookie(proxy)
+        cookie = await self.browser.get_reese_cookie(proxy)
         self.last_cookie_time = time.time()
 
-        if not value:
+        if not cookie:
             return None
 
-        cookie = ReeseCookie(value)
         await self.cookies.add(cookie)
         return cookie
 

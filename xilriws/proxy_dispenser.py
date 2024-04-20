@@ -18,7 +18,7 @@ class ProxyDispenser:
                     continue
 
                 try:
-                    self.proxies.append(Proxy.from_url(proxy_url))
+                    self.proxies.append(Proxy(proxy_url))
                 except Exception as e:
                     logger.error(f"There was a problem parsing proxy {proxy_url}: {str(e)}")
 

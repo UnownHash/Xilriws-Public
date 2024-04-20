@@ -10,23 +10,21 @@ import time
 
 
 class Proxy:
-    def __init__(self, host: str, port: int, username: str | None = None, password: str | None = None):
-        self.host = host
-        self.port = port
-        self.username = username
-        self.password = password
-
-        self.last_used: float = 0
-        self.invalidated: bool = False
-
-    @classmethod
-    def from_url(cls, url: str | ParseResult) -> Proxy:
+    def __init__(self, url: str):
         if isinstance(url, str):
             if "://" not in url:
                 url = "http://" + url
             url = urlparse(url)
 
-        return cls(host=url.hostname, port=url.port, username=url.username, password=url.password)
+        self.full_url: ParseResult = url
+
+        self.host = url.hostname
+        self.port = url.port
+        self.username = url.username
+        self.password = url.password
+
+        self.last_used: float = 0
+        self.invalidated: bool = False
 
     @property
     def url(self):

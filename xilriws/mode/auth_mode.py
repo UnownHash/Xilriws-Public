@@ -22,7 +22,6 @@ logger = logger.bind(name="Xilriws")
 class RequestData:
     username: str
     password: str
-    proxy: str
     url: str
 
 
@@ -45,7 +44,7 @@ async def auth_endpoint(request: Request, ptc_auth: PtcAuth, data: RequestData) 
         return Response(ResponseData(status=ResponseStatus.ERROR.name), status_code=HTTP_403_FORBIDDEN)
 
     try:
-        login_code = await ptc_auth.auth(data.username, data.password, data.url, data.proxy)
+        login_code = await ptc_auth.auth(data.username, data.password, data.url)
 
         logger.success("200 OK: successful auth")
         return Response(
