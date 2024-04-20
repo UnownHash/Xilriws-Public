@@ -19,4 +19,4 @@ RUN pip install poetry
 COPY . .
 RUN poetry install
 
-ENTRYPOINT ["poetry", "run", "litestar", "run"]
+ENTRYPOINT ["poetry", "run", "python", "app.py"]
