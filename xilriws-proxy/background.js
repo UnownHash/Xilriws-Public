@@ -1,6 +1,6 @@
 console.log("test")
 
-const ws = new WebSocket('ws://localhost:9091');
+const ws = new WebSocket('ws://127.0.0.1:9091');
 
 let currentProxyCreds = {
     "username": null,
