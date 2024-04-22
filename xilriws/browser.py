@@ -114,7 +114,6 @@ class Browser:
                 await self.tab.reload()
                 new_html = await self.tab.get_content()
                 if "log in" not in new_html.lower():
-                    await self.tab.wait(10000)
                     proxy.use()
                     raise LoginException("Didn't pass JS check, switching proxies in next run")
 
