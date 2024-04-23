@@ -1,0 +1,95 @@
+{
+  "Donate": {
+    "message": "Donate"
+  },
+  "ExtensionDescription": {
+    "message": "All in one fingerprint protection - protect against Canvas, WebGL, Font, AudioContext fingerprinting in your browser."
+  },
+  "ExtensionName": {
+    "message": "All Fingerprint Defender"
+  },
+  "MoreOptions": {
+    "message": "More Options"
+  },
+  "RateUs": {
+    "message": "Rate us"
+  },
+  "ReloadExtension": {
+    "message": "Reload extension"
+  },
+  "MakeBy": {
+    "message": "Make by afixer.app"
+  },
+  "PreventFingerprintingOn": {
+    "message": "Prevent fingerprinting on"
+  },
+  "Refresh": {
+    "message": "Refresh"
+  },
+  "RefreshThisPage": {
+    "message": "Refresh this page to apply new options"
+  },
+  "DetectedAndObfuscated": {
+    "message": "Detected fingerprinting type"
+  },
+  "CanvasFingerprint": {
+    "message": "Canvas Fingerprint"
+  },
+  "NumberOfFingerprints": {
+    "message": "Number of prevented fingerprints"
+  },
+  "NumberOfHosts": {
+    "message": "Number of fingerprinting hosts"
+  },
+  "Host": {
+    "message": "Host"
+  },
+  "Count": {
+    "message": "Count"
+  },
+  "Audio": {
+    "message": "Audio"
+  },
+  "Canvas": {
+    "message": "Canvas"
+  },
+  "WebGL": {
+    "message": "WebGL"
+  },
+  "Font": {
+    "message": "Font"
+  },
+  "UpdatedAt": {
+    "message": "Updated at"
+  },
+  "Action": {
+    "message": "Action"
+  },
+  "Delete": {
+    "message": "Delete"
+  },
+  "Add": {
+    "message": "Add"
+  },
+  "Added": {
+    "message": "Added"
+  },
+  "WhiteList": {
+    "message": "White list"
+  },
+  "InWhiteList": {
+    "message": "In whitelist"
+  },
+  "AddToWhiteList": {
+    "message": "Add to whitelist"
+  },
+  "Total": {
+    "message": "Total"
+  },
+  "History": {
+    "message": "History"
+  },
+  "Last30Days": {
+    "message": "last 30 days"
+  }
+}
