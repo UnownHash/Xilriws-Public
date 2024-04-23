@@ -10,7 +10,7 @@ import time
 
 
 class Proxy:
-    def __init__(self, url: str):
+    def __init__(self, url: str | None):
         if isinstance(url, str):
             if "://" not in url:
                 url = "http://" + url
@@ -62,7 +62,11 @@ class ProxyDistributor:
 
         if self.next_proxy is not None:
             self.current_proxy = copy(self.next_proxy)
-        logger.info(f"Switching to Proxy {self.current_proxy.url}")
+
+        if not self.current_proxy.host:
+            return
+
+        logger.info(f"Switching to Proxy {self.current_proxy.host}:{self.current_proxy.port}")
 
         message = json.dumps(
             {

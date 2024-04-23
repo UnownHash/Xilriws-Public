@@ -22,10 +22,20 @@ class ProxyDispenser:
                 except Exception as e:
                     logger.error(f"There was a problem parsing proxy {proxy_url}: {str(e)}")
 
+        if not self.proxies:
+            logger.warning("No congiured proxies! Using local IP only")
+            self.proxies.append(Proxy(None))
+
+        self.current_auth_index = 0
+
     async def get_auth_proxy(self) -> Proxy:
-        while True:
-            for proxy in self.proxies:
-                if not proxy.invalidated and proxy.last_limited + AUTH_TIMEOUT < time.time():
-                    return proxy
-            logger.warning("No free proxies! Consider adding more")
-            await asyncio.sleep(5)
+        proxy = self.proxies[self.current_auth_index]
+        self.current_auth_index = (self.current_auth_index + 1) % len(self.proxies)
+        return proxy
+
+        # while True:
+        #     for proxy in self.proxies:
+        #         if not proxy.invalidated and proxy.last_limited + AUTH_TIMEOUT < time.time():
+        #             return proxy
+        #     logger.warning("No free proxies! Consider adding more")
+        #     await asyncio.sleep(5)
