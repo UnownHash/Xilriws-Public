@@ -25,7 +25,7 @@ class ProxyDispenser:
     async def get_auth_proxy(self) -> Proxy:
         while True:
             for proxy in self.proxies:
-                if not proxy.invalidated and proxy.last_used + AUTH_TIMEOUT < time.time():
+                if not proxy.invalidated and proxy.last_limited + AUTH_TIMEOUT < time.time():
                     return proxy
             logger.warning("No free proxies! Consider adding more")
             await asyncio.sleep(5)

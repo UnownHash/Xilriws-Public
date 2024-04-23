@@ -67,7 +67,7 @@ class PtcAuth:
                     continue
 
                 if resp.status_code == 403:
-                    print(resp.text)
+                    # TODO it doesn't seem to actually invalidate this cookie
                     logger.info("Cookie expired. Invalidating and trying again")
                     await self.cookie_monster.remove_cookie(cookie)
                     continue

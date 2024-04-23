@@ -23,15 +23,15 @@ class Proxy:
         self.username = url.username
         self.password = url.password
 
-        self.last_used: float = 0
+        self.last_limited: float = 0
         self.invalidated: bool = False
 
     @property
     def url(self):
         return f"{self.host}:{self.port}"
 
-    def use(self):
-        self.last_used = time.time()
+    def rate_limited(self):
+        self.last_limited = time.time()
 
     def invalidate(self):
         self.invalidated = True
@@ -60,15 +60,8 @@ class ProxyDistributor:
         if proxy is not None:
             self.set_next_proxy(proxy)
 
-        if self.next_proxy is None:
-            return
-        if (
-            self.current_proxy is not None
-            and self.next_proxy.host == self.current_proxy.host
-            and self.next_proxy.port == self.current_proxy.port
-        ):
-            return
-        self.current_proxy = copy(self.next_proxy)
+        if self.next_proxy is not None:
+            self.current_proxy = copy(self.next_proxy)
         logger.info(f"Switching to Proxy {self.current_proxy.url}")
 
         message = json.dumps(

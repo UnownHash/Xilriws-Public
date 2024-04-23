@@ -49,12 +49,12 @@ async def main(cion_mode: bool):
         ],
         proxies
     )
+    proxy_dispenser = ProxyDispenser(config.get("proxies_list_path", "/xilriws/proxies.txt"))
 
     if cion_mode:
         logger.info("Starting in Cion Mode")
-        mode = CionMode(browser, proxies)
+        mode = CionMode(browser, proxies, proxy_dispenser)
     else:
-        proxy_dispenser = ProxyDispenser(config.get("proxies_list_path", "/xilriws/proxies.txt"))
         mode = AuthMode(browser, proxies, proxy_dispenser)
 
     await mode.prepare()

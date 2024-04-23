@@ -24,13 +24,14 @@ class CionResponse:
     create_tokens: list[str]
     activate_tokens: list[str]
     timestamp: int
+    proxy: str
 
 
 class Browser:
     browser: nodriver.Browser | None = None
     tab: nodriver.Tab | None = None
     consecutive_failures = 0
-    last_cookies: [nodriver.cdp.network.CookieParam] | None = None
+    last_cookies: list[nodriver.cdp.network.CookieParam] | None = None
 
     def __init__(self, extension_paths: list[str], proxies: ProxyDistributor):
         self.extension_paths: list[str] = extension_paths
@@ -49,7 +50,7 @@ class Browser:
             config.add_argument(
                 "--user-agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/123.0.0.0 Safari/537.36'"
+                "Chrome/124.0.0.0 Safari/537.36'"
             )
             try:
                 for path in self.extension_paths:
@@ -114,7 +115,7 @@ class Browser:
                 await self.tab.reload()
                 new_html = await self.tab.get_content()
                 if "log in" not in new_html.lower():
-                    proxy.use()
+                    proxy.rate_limited()
                     raise LoginException("Didn't pass JS check, switching proxies in next run")
 
             logger.info("Getting cookies from browser")
@@ -187,6 +188,7 @@ class Browser:
             # print(test)
 
             await self.proxies.change_proxy()
+            proxy = self.proxies.current_proxy
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening Join page")
             await self.tab.get(url=JOIN_URL + "login")
@@ -201,19 +203,18 @@ class Browser:
 
             await self.tab.reload()
             # TODO check for error 16, mark proxies as dead
+
             try:
-                await self.tab.wait_for("iframe[title='reCAPTCHA']", timeout=20)
+                await self.tab.wait_for("iframe[title='reCAPTCHA']", timeout=15)
             except asyncio.TimeoutError:
                 raise LoginException("Timeout while waiting for captcha")
 
             obj, error = await self.tab.send(nodriver.cdp.runtime.evaluate(recaptcha.SRC))
 
             logger.info("Preparing token retreiving")
+
             obj, errors = await self.tab.send(nodriver.cdp.runtime.evaluate(load.SRC))
             obj: nodriver.cdp.runtime.RemoteObject
-
-            if errors:
-                print(errors)
 
             logger.info("Getting tokens")
             r, errors = await self.tab.send(nodriver.cdp.runtime.await_promise(obj.object_id, return_by_value=True))
@@ -238,6 +239,7 @@ class Browser:
                 create_tokens=recaptcha_tokens["create"],
                 activate_tokens=recaptcha_tokens["activate"],
                 timestamp=timestamp,
+                proxy=proxy.full_url.geturl()
             )
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
