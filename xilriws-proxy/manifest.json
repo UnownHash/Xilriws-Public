@@ -10,7 +10,9 @@
         "<all_urls>",
         "webRequest",
         "webRequestBlocking",
-        "devtools"
+        "devtools",
+        "cookies",
+        "storage"
     ],
     "background": {
         "scripts": ["background.js"]
