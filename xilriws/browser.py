@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import time
 from dataclasses import dataclass
-import re
 
 import nodriver
 from loguru import logger
 
 from .constants import ACCESS_URL
 from .constants import JOIN_URL
-from .ptc_auth import LoginException
 from .js import load, recaptcha
 from .proxy import ProxyDistributor, Proxy
+from .ptc_auth import LoginException
 from .reese_cookie import ReeseCookie
 
 logger = logger.bind(name="Browser")
@@ -100,13 +100,13 @@ class Browser:
             await self.proxies.change_proxy()
             proxy = self.proxies.current_proxy
 
-            await self.tab.get(url="https://api.ipify.org/")
-            ip_html = await self.tab.get_content()
-            ip = re.search(r"\d*\.\d*\.\d*\.\d*", ip_html)
-            if ip and ip.group(0):
-                logger.info(f"Browser IP check: {ip.group(0)}")
-            else:
-                logger.info("Browser IP check failed")
+            # await self.tab.get(url="https://api.ipify.org/")
+            # ip_html = await self.tab.get_content()
+            # ip = re.search(r"\d*\.\d*\.\d*\.\d*", ip_html)
+            # if ip and ip.group(0):
+            #     logger.info(f"Browser IP check: {ip.group(0)}")
+            # else:
+            #     logger.info("Browser IP check failed")
 
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening PTC")
