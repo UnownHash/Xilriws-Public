@@ -154,7 +154,7 @@ class Browser:
                 if "log in" not in new_html.lower():
                     logger.debug(new_html)
                     proxy.rate_limited()
-                    code_match = re.search(r"&edet=(\d*)&", new_html)
+                    code_match = re.search(r";edet=(\d*)&", new_html)
                     if code_match and code_match.group(1):
                         code = code_match.group(1)
                     else:
