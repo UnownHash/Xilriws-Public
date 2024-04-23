@@ -38,7 +38,6 @@ class CookieMonster:
     def __init__(self, browser: Browser, proxies: ProxyDistributor, proxy_dispenser: ProxyDispenser):
         self.browser: Browser = browser
         self.cookies: AwaitableSet[ReeseCookie] = AwaitableSet()
-        self.last_cookie_time: float = 0
         self.proxies = proxies
         self.proxy_dispenser = proxy_dispenser
 
@@ -101,13 +100,7 @@ class CookieMonster:
     async def __get_one_cookie(self, proxy: Proxy) -> ReeseCookie | None:
         logger.info("Opening browser to get a cookie")
 
-        time_since_last_cookie = time.time() - self.last_cookie_time
-        if 0 <= time_since_last_cookie < 1.1:
-            await asyncio.sleep(1.1 - time_since_last_cookie)
-            # the extension clears cookies 1s after closing the tab. TODO: update the extension
-
         cookie = await self.browser.get_reese_cookie(proxy)
-        self.last_cookie_time = time.time()
 
         if not cookie:
             return None

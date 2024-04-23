@@ -4,6 +4,7 @@ import asyncio
 import re
 import time
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import nodriver
 from loguru import logger
@@ -14,9 +15,15 @@ from .js import load, recaptcha
 from .proxy import ProxyDistributor, Proxy
 from .ptc_auth import LoginException
 from .reese_cookie import ReeseCookie
+from .debug import IS_DEBUG
+from .extension_comm import ExtensionComm, FINISH_PROXY, FINISH_COOKIE_PURGE
 
 logger = logger.bind(name="Browser")
-HEADLESS = True
+HEADLESS = not IS_DEBUG
+
+
+class ProxyException(Exception):
+    pass
 
 
 @dataclass
@@ -33,10 +40,12 @@ class Browser:
     tab: nodriver.Tab | None = None
     consecutive_failures = 0
     last_cookies: list[nodriver.cdp.network.CookieParam] | None = None
+    cookie_future: asyncio.Future | None = None
 
-    def __init__(self, extension_paths: list[str], proxies: ProxyDistributor):
+    def __init__(self, extension_paths: list[str], proxies: ProxyDistributor, ext_comm: ExtensionComm):
         self.extension_paths: list[str] = extension_paths
         self.proxies = proxies
+        self.ext_comm = ext_comm
 
     async def start_browser(self):
         if self.consecutive_failures >= 30:
@@ -91,28 +100,47 @@ class Browser:
 
             logger.info("Opening tab")
             if not self.tab:
-                self.tab = await self.browser.get()
-            if self.last_cookies:
-                await self.browser.cookies.set_all(self.last_cookies)
+                self.tab = await self.browser.get("chrome://extensions" if IS_DEBUG else None)
+
+            # await asyncio.sleep(10000)
 
             # await self.tab.set_window_size(0, 0, 720, 1080)
 
+            proxy_future = await self.ext_comm.add_listener(FINISH_PROXY)
             await self.proxies.change_proxy()
+
+            try:
+                await asyncio.wait_for(proxy_future, 2)
+            except asyncio.TimeoutError:
+                logger.info("Didn't get confirmation that proxy changed, continuing anyway")
+
+            if self.last_cookies:
+                if self.cookie_future:
+                    try:
+                        await asyncio.wait_for(self.cookie_future, 2)
+                    except asyncio.TimeoutError:
+                        logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
+                await self.browser.cookies.set_all(self.last_cookies)
+
             proxy = self.proxies.current_proxy
 
-            # await self.tab.get(url="https://api.ipify.org/")
-            # ip_html = await self.tab.get_content()
-            # ip = re.search(r"\d*\.\d*\.\d*\.\d*", ip_html)
-            # if ip and ip.group(0):
-            #     logger.info(f"Browser IP check: {ip.group(0)}")
-            # else:
-            #     logger.info("Browser IP check failed")
+            if IS_DEBUG:
+                await self.tab.get(url="https://api.ipify.org/")
+                ip_html = await self.tab.get_content()
+                ip = re.search(r"\d*\.\d*\.\d*\.\d*", ip_html)
+                if ip and ip.group(0):
+                    logger.info(f"Browser IP check: {ip.group(0)}")
+                else:
+                    logger.info("Browser IP check failed")
 
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening PTC")
             await self.tab.get(url=ACCESS_URL + "login")
 
             html = await self.tab.get_content()
+            if "ERR_EMPTY_RESPONSE" in html or "ERR_EMPTY_RESPONSE" in html:
+                proxy.invalidate()  # TODO this doesn't actually do anything
+                raise ProxyException(f"Proxy {proxy.url} couldn't be reached")
             if "log in" not in html.lower():
                 logger.info("Got Error 15 page (this is NOT an error! it's intended)")
                 if not js_future.done():
@@ -121,6 +149,7 @@ class Browser:
                         self.tab.handlers.clear()
                         logger.info("JS check done. reloading")
                     except asyncio.TimeoutError:
+                        await asyncio.sleep(10)
                         raise LoginException("Timeout on JS challenge")
                 await self.tab.reload()
                 new_html = await self.tab.get_content()
@@ -155,6 +184,7 @@ class Browser:
             if not value:
                 raise LoginException("Didn't find reese cookie in browser")
 
+            self.cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
             new_tab = await self.tab.get(new_tab=True)
             await self.tab.close()
             self.tab = new_tab
@@ -164,7 +194,10 @@ class Browser:
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
             self.consecutive_failures += 1
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(1)
+            return None
+        except ProxyException as e:
+            logger.error(f"{str(e)} while getting cookie")
             return None
         except Exception as e:
             logger.exception("Exception in browser", e)
@@ -199,10 +232,20 @@ class Browser:
             if not self.tab:
                 self.tab = await self.browser.get()
 
-            # test = await self.tab.send(nodriver.cdp.target.create_browser_context(dispose_on_detach=True))
-            # print(test)
-
+            proxy_future = await self.ext_comm.add_listener(FINISH_PROXY)
             await self.proxies.change_proxy()
+
+            try:
+                await asyncio.wait_for(proxy_future, 2)
+            except asyncio.TimeoutError:
+                logger.info("Didn't get confirmation that proxy changed, continuing anyway")
+
+            if self.cookie_future:
+                try:
+                    await asyncio.wait_for(self.cookie_future, 2)
+                except asyncio.TimeoutError:
+                    logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
+
             proxy = self.proxies.current_proxy
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening Join page")
@@ -245,6 +288,7 @@ class Browser:
                 logger.info("Got a cookie")
                 value = cookie.value
 
+            self.cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
             new_tab = await self.tab.get(new_tab=True)
             await self.tab.close()
             self.tab = new_tab

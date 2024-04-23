@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-import websockets
-import asyncio
-import json
-from loguru import logger
-from copy import copy
-from urllib.parse import ParseResult, urlparse
 import time
+from copy import copy
+from typing import TYPE_CHECKING
+from urllib.parse import ParseResult, urlparse
+
+from loguru import logger
+
+if TYPE_CHECKING:
+    from .extension_comm import ExtensionComm
 
 
 class Proxy:
@@ -43,17 +45,10 @@ logger = logger.bind(name="Proxy")
 
 
 class ProxyDistributor:
-    def __init__(self):
-        self.clients: set[websockets.WebSocketServerProtocol] = set()
+    def __init__(self, ext_comm: ExtensionComm):
         self.next_proxy: Proxy | None = None
         self.current_proxy: Proxy | None = None
-
-    async def echo(self, websocket: websockets.WebSocketServerProtocol):
-        self.clients.add(websocket)
-        try:
-            await websocket.wait_closed()
-        finally:
-            self.clients.remove(websocket)
+        self.ext_comm = ext_comm
 
     def set_next_proxy(self, proxy: Proxy):
         self.next_proxy = proxy
@@ -70,7 +65,7 @@ class ProxyDistributor:
 
         logger.info(f"Switching to Proxy {self.current_proxy.host}:{self.current_proxy.port}")
 
-        message = json.dumps(
+        await self.ext_comm.send(
             {
                 "host": self.current_proxy.host,
                 "port": self.current_proxy.port,
@@ -78,9 +73,3 @@ class ProxyDistributor:
                 "username": self.current_proxy.username,
             }
         )
-        for client in self.clients:
-            await client.send(message)
-
-    async def start(self):
-        async with websockets.serve(self.echo, "127.0.0.1", 9091):
-            await asyncio.Future()

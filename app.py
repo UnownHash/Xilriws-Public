@@ -15,6 +15,7 @@ from xilriws.mode import CionMode, AuthMode
 from xilriws.proxy import ProxyDistributor
 from xilriws.proxy_dispenser import ProxyDispenser
 from xilriws.task_creator import task_creator
+from xilriws.extension_comm import ExtensionComm
 
 httpx_logger = logging.getLogger("httpx")
 httpx_logger.setLevel(logging.CRITICAL)
@@ -38,16 +39,18 @@ async def main(cion_mode: bool):
     else:
         config = {}
 
-    proxies = ProxyDistributor()
-    task_creator.create_task(proxies.start())
+    ext_comm = ExtensionComm()
+    task_creator.create_task(ext_comm.start())
+    proxies = ProxyDistributor(ext_comm)
 
     browser = Browser(
         [
             config.get("fingerprint_random_path", "/xilriws/xilriws-fingerprint-random/"),
-            config.get("cookie_delete_path", "/xilriws/xilriws-cookie-delete/"),
+            # config.get("cookie_delete_path", "/xilriws/xilriws-cookie-delete/"),
             config.get("proxy", "/xilriws/xilriws-proxy")
         ],
-        proxies
+        proxies,
+        ext_comm
     )
     proxy_dispenser = ProxyDispenser(config.get("proxies_list_path", "/xilriws/proxies.txt"))
 

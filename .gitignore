@@ -11,3 +11,4 @@ xilriws-cookie-delete*
 test
 *.js
 *.txt
+node_modules/*

@@ -37,5 +37,3 @@ class PtcJoin:
                     self.responses.append(resp)
             except Exception as e:
                 logger.exception("unhandled exception while getting tokens", e)
-
-            await asyncio.sleep(1.1)
