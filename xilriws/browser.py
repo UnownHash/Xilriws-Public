@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass
+import re
 
 import nodriver
 from loguru import logger
@@ -98,6 +99,15 @@ class Browser:
 
             await self.proxies.change_proxy()
             proxy = self.proxies.current_proxy
+
+            await self.tab.get(url="https://api.ipify.org/")
+            ip_html = await self.tab.get_content()
+            ip = re.search(r"\d*\.\d*\.\d*\.\d*", ip_html)
+            if ip and ip.group(0):
+                logger.info(f"Browser IP check: {ip.group(0)}")
+            else:
+                logger.info("Browser IP check failed")
+
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening PTC")
             await self.tab.get(url=ACCESS_URL + "login")
@@ -116,7 +126,12 @@ class Browser:
                 new_html = await self.tab.get_content()
                 if "log in" not in new_html.lower():
                     proxy.rate_limited()
-                    raise LoginException("Didn't pass JS check, switching proxies in next run")
+                    code_match = re.search(r"&edet=(\d*)&", new_html)
+                    if code_match and code_match.group(1):
+                        code = code_match.group(1)
+                    else:
+                        code = "unknown"
+                    raise LoginException(f"Didn't pass JS check. Code: {code}")
 
             logger.info("Getting cookies from browser")
             value: str | None = None
