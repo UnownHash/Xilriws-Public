@@ -22,7 +22,7 @@ function startProxy(host, port) {
     const config = {
         mode: "fixed_servers",
         rules: {
-            singleProxy: {
+            proxyForHttp: {
                 scheme: "http",
                 host: host,
                 port: port,
