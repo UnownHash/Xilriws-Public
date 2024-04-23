@@ -58,9 +58,7 @@ class Browser:
         if not self.browser:
             config = nodriver.Config(headless=HEADLESS)
             config.add_argument(
-                "--user-agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/124.0.0.0 Safari/537.36'"
+                "--user-agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'"
             )
             try:
                 for path in self.extension_paths:
@@ -100,7 +98,7 @@ class Browser:
 
             logger.info("Opening tab")
             if not self.tab:
-                self.tab = await self.browser.get("chrome://extensions" if IS_DEBUG else None)
+                self.tab = await self.browser.get("chrome://extensions" if IS_DEBUG else "chrome://welcome")
 
             # await asyncio.sleep(10000)
 
@@ -154,6 +152,7 @@ class Browser:
                 await self.tab.reload()
                 new_html = await self.tab.get_content()
                 if "log in" not in new_html.lower():
+                    logger.debug(new_html)
                     proxy.rate_limited()
                     code_match = re.search(r"&edet=(\d*)&", new_html)
                     if code_match and code_match.group(1):
