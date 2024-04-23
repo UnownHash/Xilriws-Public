@@ -15,6 +15,8 @@ class Proxy:
             if "://" not in url:
                 url = "http://" + url
             url = urlparse(url)
+        elif url is None:
+            url = urlparse(url)
 
         self.full_url: ParseResult = url
 

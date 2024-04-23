@@ -23,7 +23,7 @@ class ProxyDispenser:
                     logger.error(f"There was a problem parsing proxy {proxy_url}: {str(e)}")
 
         if not self.proxies:
-            logger.warning("No congiured proxies! Using local IP only")
+            logger.warning("No configured proxies! Using local IP only")
             self.proxies.append(Proxy(None))
 
         self.current_auth_index = 0
