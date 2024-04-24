@@ -22,14 +22,14 @@ function sendWs(action, detail) {
 
 function startProxy(host, port) {
     const proxyConfig = {
-        mode: "system",
+        mode: "fixed_servers",
         rules: {
-            proxyForHttps: {
+            singleProxy: {
                 scheme: "http",
                 host: host,
                 port: port,
             },
-            bypassList: ["localhost"],
+            bypassList: [],
         },
     };
     chrome.proxy.settings.set(
