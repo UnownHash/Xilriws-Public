@@ -26,4 +26,4 @@ RUN pip install poetry
 COPY . .
 RUN poetry install
 
-ENTRYPOINT ["poetry", "run", "python", "app.py", "--debug"]
+ENTRYPOINT ["poetry", "run", "python", "app.py"]
