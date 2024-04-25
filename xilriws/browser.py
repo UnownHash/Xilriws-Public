@@ -397,6 +397,7 @@ class Browser:
             for item in os.environ.get("PATH").split(os.pathsep):
                 for subitem in (
                     "brave",
+                    "brave-browser",
                     "google-chrome",
                     "chromium",
                     "chromium-browser",

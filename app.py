@@ -30,6 +30,8 @@ logger = logger.bind(name="Xilriws")
 
 if sys.platform != "win32":
     signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+# else:
+#     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 async def main(cion_mode: bool):

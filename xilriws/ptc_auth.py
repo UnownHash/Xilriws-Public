@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import httpx
 from loguru import logger
+from curl_cffi import requests
 
 from .constants import ACCESS_URL, COOKIE_STORAGE
 
@@ -42,7 +43,7 @@ class PtcAuth:
             attempts -= 1
             cookie = await self.cookie_monster.get_reese_cookie()
 
-            async with httpx.AsyncClient(
+            async with requests.AsyncSession(
                 headers={
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                     "Accept-Language": "en-us",
@@ -52,10 +53,10 @@ class PtcAuth:
                     "AppleWebKit/537.36 (KHTML, like Gecko) "
                     "Chrome/123.0.0.0 Safari/537.36",
                 },
-                follow_redirects=True,
+                allow_redirects=True,
                 verify=False,
                 timeout=10,
-                proxies=cookie.proxy,
+                proxy=cookie.proxy,
                 cookies=cookie.cookies,
             ) as client:
                 logger.info("Calling OAUTH page")

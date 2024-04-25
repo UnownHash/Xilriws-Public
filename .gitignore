@@ -12,3 +12,4 @@ test
 *.js
 *.txt
 node_modules/*
+test*
