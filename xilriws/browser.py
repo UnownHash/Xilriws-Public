@@ -20,7 +20,7 @@ from .ptc_auth import LoginException
 from .reese_cookie import ReeseCookie
 
 logger = logger.bind(name="Browser")
-HEADLESS = not IS_DEBUG
+HEADLESS = True
 
 
 class ProxyException(Exception):
