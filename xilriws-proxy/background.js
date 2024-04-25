@@ -61,11 +61,11 @@ chrome.tabs.onUpdated.addListener((tabId, details) => {
             {code: 'localStorage.clear()', runAt: 'document_start'},
             (result) => {console.log('Cleared local storage')}
         )
-    chrome.tabs.executeScript(
-        tabId,
-        {file: 'stealth.min.js', runAt: 'document_start'},
-            (result) => {console.log('stealth.js loaded')}
-    )
+    // chrome.tabs.executeScript(
+    //     tabId,
+    //     {file: 'stealth.min.js', runAt: 'document_start'},
+    //         (result) => {console.log('stealth.js loaded')}
+    // )
 })
 
 chrome.tabs.onRemoved.addListener(
