@@ -71,16 +71,14 @@ class Browser:
             config.add_argument(
                 "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3"
             )
+            full_path = f"{self.browser.config.browser_executable_path} {' '.join(self.browser.config())}"
+
             try:
                 for path in self.extension_paths:
                     config.add_extension(path)
 
                 self.browser = await nodriver.start(config)
-                logger.info(
-                    f"Starting browser: `{self.browser.config.browser_executable_path} "
-                    f"{' '.join(self.browser.config())}"
-                    "`"
-                )
+                logger.info(f"Starting browser: `{full_path}`")
 
                 if "brave" in self.browser.config.browser_executable_path.lower():
                     self.tab = await self.browser.get("brave://settings/shields")
@@ -94,7 +92,7 @@ class Browser:
                 logger.error(str(e))
                 logger.error(
                     f"Error while starting the browser. Please confirm you can start it manually by running "
-                    f"`{config.browser_executable_path}`"
+                    f"`{full_path}`"
                 )
                 raise e
 
