@@ -1,22 +1,23 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import re
+import sys
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 import nodriver
 from loguru import logger
 
 from .constants import ACCESS_URL
 from .constants import JOIN_URL
+from .debug import IS_DEBUG
+from .extension_comm import ExtensionComm, FINISH_PROXY, FINISH_COOKIE_PURGE
 from .js import load, recaptcha
 from .proxy import ProxyDistributor, Proxy
 from .ptc_auth import LoginException
 from .reese_cookie import ReeseCookie
-from .debug import IS_DEBUG
-from .extension_comm import ExtensionComm, FINISH_PROXY, FINISH_COOKIE_PURGE
 
 logger = logger.bind(name="Browser")
 HEADLESS = not IS_DEBUG
@@ -28,7 +29,7 @@ class ProxyException(Exception):
 
 @dataclass
 class CionResponse:
-    reese_cookie: str
+    reese_cookie: dict
     create_tokens: list[str]
     activate_tokens: list[str]
     timestamp: int
@@ -41,6 +42,7 @@ class Browser:
     consecutive_failures = 0
     last_cookies: list[nodriver.cdp.network.CookieParam] | None = None
     cookie_future: asyncio.Future | None = None
+    session_count = 0
 
     def __init__(self, extension_paths: list[str], proxies: ProxyDistributor, ext_comm: ExtensionComm):
         self.extension_paths: list[str] = extension_paths
@@ -55,21 +57,39 @@ class Browser:
             return None
 
         logger.info("Browser starting")
+
+        if self.browser:
+            self.session_count += 1
+
+            if self.session_count % 100 == 0:
+                logger.info("Time for a browser restart")
+                self.browser.stop()
+                self.browser = None
+
         if not self.browser:
-            config = nodriver.Config(headless=HEADLESS)
+            config = nodriver.Config(headless=HEADLESS, browser_executable_path=self.__find_chrome_executable())
             config.add_argument(
-                "--user-agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'"
+                "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3"
             )
             try:
                 for path in self.extension_paths:
                     config.add_extension(path)
-                # config.add_argument("--disable-web-security")
+
                 self.browser = await nodriver.start(config)
                 logger.info(
                     f"Starting browser: `{self.browser.config.browser_executable_path} "
                     f"{' '.join(self.browser.config())}"
                     "`"
                 )
+
+                if "brave" in self.browser.config.browser_executable_path.lower():
+                    self.tab = await self.browser.get("brave://settings/shields")
+                    await self.tab.wait_for("html")
+                    await self.tab.evaluate(
+                        "const select = document.querySelector('settings-ui').shadowRoot.querySelector('settings-main').shadowRoot.querySelector('settings-basic-page').shadowRoot.querySelector('settings-default-brave-shields-page').shadowRoot.getElementById('fingerprintingSelectControlType');"
+                        "select.value = 'block';"
+                        "select.dispatchEvent(new Event('change'));"
+                    )
             except Exception as e:
                 logger.error(str(e))
                 logger.error(
@@ -96,9 +116,7 @@ class Browser:
                 if not js_future.done():
                     js_future.set_result(True)
 
-            logger.info("Opening tab")
-            if not self.tab:
-                self.tab = await self.browser.get("chrome://extensions" if IS_DEBUG else "chrome://welcome")
+            await self._open_tab()
 
             # await asyncio.sleep(10000)
 
@@ -123,13 +141,7 @@ class Browser:
             proxy = self.proxies.current_proxy
 
             if IS_DEBUG:
-                await self.tab.get(url="https://api.ipify.org/")
-                ip_html = await self.tab.get_content()
-                ip = re.search(r"\d*\.\d*\.\d*\.\d*", ip_html)
-                if ip and ip.group(0):
-                    logger.info(f"Browser IP check: {ip.group(0)}")
-                else:
-                    logger.info("Browser IP check failed")
+                await self._log_ip()
 
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening PTC")
@@ -227,9 +239,8 @@ class Browser:
                 if not js_future.done():
                     js_future.set_result(True)
 
-            logger.info("Opening tab")
-            if not self.tab:
-                self.tab = await self.browser.get()
+            await self._open_tab()
+            # await asyncio.sleep(300000000)
 
             proxy_future = await self.ext_comm.add_listener(FINISH_PROXY)
             await self.proxies.change_proxy()
@@ -244,6 +255,9 @@ class Browser:
                     await asyncio.wait_for(self.cookie_future, 2)
                 except asyncio.TimeoutError:
                     logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
+
+            if IS_DEBUG:
+                await self._log_ip()
 
             proxy = self.proxies.current_proxy
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
@@ -262,7 +276,7 @@ class Browser:
             # TODO check for error 16, mark proxies as dead
 
             try:
-                await self.tab.wait_for("iframe[title='reCAPTCHA']", timeout=15)
+                await self.tab.wait_for("iframe[title='reCAPTCHA']", timeout=25)
             except asyncio.TimeoutError:
                 raise LoginException("Timeout while waiting for captcha")
 
@@ -278,29 +292,48 @@ class Browser:
 
             recaptcha_tokens = r.value
 
+            # await asyncio.sleep(30000)
+
             logger.info("Getting cookies from browser")
             value: str | None = None
-            cookies = await self.browser.cookies.get_all()
-            for cookie in cookies:
-                if cookie.name != "reese84":
-                    continue
-                logger.info("Got a cookie")
-                value = cookie.value
+            all_cookies: dict[str, str] = {}
+            attempts = 10
+            while not value and attempts > 0:
+                attempts -= 1
+                cookies = await self.browser.cookies.get_all()
+                for cookie in cookies:
+                    if cookie.name == "reese84":
+                        logger.info("Got a cookie")
+                        value = cookie.value
+                        continue
+
+                if not value:
+                    await self.tab.wait(0.3)
+                else:
+                    all_cookies = {c.name: c.value for c in cookies}
+                    self.last_cookies = cookies
+
+            if not value:
+                raise LoginException("Didn't find reese cookie in browser")
 
             self.cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
             new_tab = await self.tab.get(new_tab=True)
             await self.tab.close()
             self.tab = new_tab
+            self.consecutive_failures = 0
 
             return CionResponse(
-                reese_cookie=value,
+                reese_cookie=all_cookies,
                 create_tokens=recaptcha_tokens["create"],
                 activate_tokens=recaptcha_tokens["activate"],
                 timestamp=timestamp,
                 proxy=proxy.full_url.geturl()
             )
         except LoginException as e:
-            logger.error(f"{str(e)} while getting cookie")
+            logger.error(f"{str(e)} while getting tokens")
+            # self.consecutive_failures += 1
+            # await asyncio.sleep(1)
+            # return None
         except Exception as e:
             logger.exception("Exception during browser", e)
 
@@ -309,3 +342,79 @@ class Browser:
         self.tab = None
         self.browser = None
         return None
+
+    async def _open_tab(self):
+        logger.info("Opening tab")
+        if not self.tab:
+            self.tab = await self.browser.get("chrome://extensions" if IS_DEBUG else "about:blank")
+
+    async def _log_ip(self):
+        await self.tab.get(url="https://api.ipify.org/")
+        ip_html = await self.tab.get_content()
+        ip = re.search(r"\d*\.\d*\.\d*\.\d*", ip_html)
+        if ip and ip.group(0):
+            logger.info(f"Browser IP check: {ip.group(0)}")
+        else:
+            logger.info("Browser IP check failed")
+
+    def __find_chrome_executable(self, return_all=False):
+        candidates = []
+        if sys.platform.startswith(("darwin", "cygwin", "linux", "linux2")):
+            for item in os.environ.get("PATH").split(os.pathsep):
+                for subitem in (
+                    "brave",
+                    "google-chrome",
+                    "chromium",
+                    "chromium-browser",
+                    "chrome",
+                    "google-chrome-stable",
+                ):
+                    candidates.append(os.sep.join((item, subitem)))
+            if "darwin" in sys.platform:
+                candidates += [
+                    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+                ]
+
+        else:
+            for item in map(
+                os.environ.get,
+                ("PROGRAMFILES", "PROGRAMFILES(X86)", "LOCALAPPDATA", "PROGRAMW6432"),
+            ):
+                if item is not None:
+                    for subitem in (
+                        "BraveSoftware/Brave-Browser/Application",
+                        "Google/Chrome/Application",
+                        "Google/Chrome Beta/Application",
+                        "Google/Chrome Canary/Application",
+                    ):
+                        candidates.append(os.sep.join((item, subitem, "brave.exe")))
+                        candidates.append(os.sep.join((item, subitem, "chrome.exe")))
+        rv = []
+        for candidate in candidates:
+            if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+                logger.debug("%s is a valid candidate... " % candidate)
+                rv.append(candidate)
+
+        winner = None
+
+        if return_all and rv:
+            return rv
+
+        winner = next((r for r in rv if "brave" in r.lower()), None)
+
+        if not winner:
+            if rv and len(rv) > 1:
+                # assuming the shortest path wins
+                winner = min(rv, key=lambda x: len(x))
+
+            elif len(rv) == 1:
+                winner = rv[0]
+
+        if winner:
+            return os.path.normpath(winner)
+
+        raise FileNotFoundError(
+            "could not find a valid chrome browser binary. please make sure chrome is installed."
+            "or use the keyword argument 'browser_executable_path=/path/to/your/browser' "
+        )

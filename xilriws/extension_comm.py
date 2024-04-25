@@ -32,7 +32,10 @@ class ExtensionComm:
                     continue
 
                 for future in futures:
-                    future.set_result(detail)
+                    try:
+                        future.set_result(detail)
+                    except asyncio.InvalidStateError:
+                        continue
                 del self.futures[action]
 
             await websocket.wait_closed()

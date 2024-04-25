@@ -47,7 +47,7 @@ async def main(cion_mode: bool):
         [
             config.get("fingerprint_random_path", "/xilriws/xilriws-fingerprint-random/"),
             # config.get("cookie_delete_path", "/xilriws/xilriws-cookie-delete/"),
-            config.get("proxy", "/xilriws/xilriws-proxy")
+            config.get("proxy", "/xilriws/xilriws-proxy"),
         ],
         proxies,
         ext_comm

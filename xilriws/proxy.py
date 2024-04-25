@@ -24,6 +24,7 @@ class Proxy:
 
         self.host = url.hostname
         self.port = url.port
+        self.scheme = url.scheme
         self.username = url.username
         self.password = url.password
 
@@ -60,6 +61,9 @@ class ProxyDistributor:
         if self.next_proxy is not None:
             self.current_proxy = copy(self.next_proxy)
 
+        if self.current_proxy is None:
+            return
+
         if not self.current_proxy.host:
             return
 
@@ -69,6 +73,7 @@ class ProxyDistributor:
             {
                 "host": self.current_proxy.host,
                 "port": self.current_proxy.port,
+                "scheme": self.current_proxy.scheme,
                 "password": self.current_proxy.password,
                 "username": self.current_proxy.username,
             }
