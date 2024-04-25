@@ -20,7 +20,7 @@ from .ptc_auth import LoginException
 from .reese_cookie import ReeseCookie
 
 logger = logger.bind(name="Browser")
-HEADLESS = True
+HEADLESS = not IS_DEBUG
 
 
 class ProxyException(Exception):
@@ -69,7 +69,7 @@ class Browser:
         if not self.browser:
             config = nodriver.Config(headless=HEADLESS, browser_executable_path=self.__find_chrome_executable())
             config.add_argument(
-                "--user-agent=\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3\""
+                '--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3"'
             )
             full_command = f"{config.browser_executable_path} {' '.join(config())}"
 
@@ -81,13 +81,32 @@ class Browser:
                 logger.info(f"Starting browser: `{full_command}`")
 
                 if "brave" in self.browser.config.browser_executable_path.lower():
-                    self.tab = await self.browser.get("brave://settings/shields")
-                    await self.tab.wait_for("html")
-                    await self.tab.evaluate(
-                        "const select = document.querySelector('settings-ui').shadowRoot.querySelector('settings-main').shadowRoot.querySelector('settings-basic-page').shadowRoot.querySelector('settings-default-brave-shields-page').shadowRoot.getElementById('fingerprintingSelectControlType');"
-                        "select.value = 'block';"
-                        "select.dispatchEvent(new Event('change'));"
+                    await self.set_setting(
+                        shadow_roots=[
+                            "settings-ui",
+                            "settings-main",
+                            "settings-basic-page",
+                            "settings-default-brave-shields-page",
+                        ],
+                        element_id="fingerprintingSelectControlType",
+                        new_value="block",
+                        uri="brave://settings/shields"
                     )
+                    await self.set_setting(
+                        shadow_roots=[
+                            "settings-ui",
+                            "settings-main",
+                            "settings-basic-page",
+                            "settings-privacy-page",
+                            "settings-personalization-options",
+                            "settings-brave-personalization-options",
+                            "settings-dropdown-menu",
+                        ],
+                        element_id="dropdownMenu",
+                        new_value="disable_non_proxied_udp",
+                        uri="brave://settings/privacy"
+                    )
+
             except Exception as e:
                 logger.error(str(e))
                 logger.error(
@@ -325,7 +344,7 @@ class Browser:
                 create_tokens=recaptcha_tokens["create"],
                 activate_tokens=recaptcha_tokens["activate"],
                 timestamp=timestamp,
-                proxy=proxy.full_url.geturl()
+                proxy=proxy.full_url.geturl(),
             )
         except LoginException as e:
             logger.error(f"{str(e)} while getting tokens")
@@ -340,6 +359,23 @@ class Browser:
         self.tab = None
         self.browser = None
         return None
+
+    async def set_setting(self, shadow_roots: list[str], element_id: str, new_value: str, uri: str | None = None):
+        if uri is not None:
+            self.tab = await self.browser.get(uri)
+            await self.tab.wait_for("html")
+
+        inject_js = "const element=document."
+        inject_js += ".".join(f"querySelector('{s}').shadowRoot" for s in shadow_roots)
+        inject_js += f".getElementById('{element_id}');"
+        inject_js += f"element.value='{new_value}';"
+        inject_js += "element.dispatchEvent(new Event('change'));"
+
+        print(inject_js)
+        try:
+            await self.tab.evaluate(inject_js)
+        except Exception as e:
+            logger.warning(f"{str(e)} while changing setting {element_id}, ignoring")
 
     async def _open_tab(self):
         logger.info("Opening tab")
@@ -385,6 +421,7 @@ class Browser:
                         "Google/Chrome/Application",
                         "Google/Chrome Beta/Application",
                         "Google/Chrome Canary/Application",
+                        # "Chromium/Application"
                     ):
                         candidates.append(os.sep.join((item, subitem, "brave.exe")))
                         candidates.append(os.sep.join((item, subitem, "chrome.exe")))
