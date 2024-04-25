@@ -13,19 +13,19 @@ ws.onmessage = (event) => {
         username: data.username,
         password: data.password
     }
-    startProxy(data.host, data.port)
+    startProxy(data.host, data.port, data.scheme)
 }
 
 function sendWs(action, detail) {
     ws.send(JSON.stringify({action: action, detail: detail}))
 }
 
-function startProxy(host, port) {
+function startProxy(host, port, scheme) {
     const proxyConfig = {
-        mode: "fixed_servers",
+        mode: 'fixed_servers',
         rules: {
             singleProxy: {
-                scheme: "http",
+                scheme: scheme,
                 host: host,
                 port: port,
             },
@@ -50,14 +50,26 @@ chrome.webRequest.onAuthRequired.addListener(
     ["blocking"],
 )
 
+chrome.tabs.onUpdated.addListener((tabId, details) => {
+    if (!details.url) {
+        return
+    }
+
+    chrome.tabs.executeScript(
+            tabId,
+            {code: 'localStorage.clear()', runAt: 'document_start'},
+            (result) => {console.log('Cleared local storage')}
+        )
+})
+
 chrome.tabs.onRemoved.addListener(
-    () => {
-        chrome.storage.local.clear(() => console.log('deleted local storage'))
+    (tabId) => {
         chrome.cookies.getAll({}, cookies => {
                 console.log('Deleting ' + cookies.length + ' cookies')
                 let goal = cookies.length
 
-                function deleteCallback() {
+                function deleteCallback(details) {
+                    console.log(details)
                     goal -= 1
 
                     if (goal <= 0) {
@@ -66,11 +78,20 @@ chrome.tabs.onRemoved.addListener(
                     }
                 }
 
-                cookies.forEach(cookie => chrome.cookies.remove({
-                    name: cookie.name,
-                    url: `${cookie.secure ? 'https' : 'http'}://${cookie.domain}${cookie.path}`,
-                    storeId: cookie.storeId
-                }, deleteCallback))
+                cookies.forEach(cookie => {
+                    let domain = cookie.domain
+                    if (domain.startsWith('.')) {
+                        domain = domain.substring(1, domain.length)
+                    }
+                    const protocol = cookie.secure ? 'https' : 'http'
+                    console.log(`${protocol}://${domain}${cookie.path}`)
+
+                    chrome.cookies.remove({
+                        name: cookie.name,
+                        url: `${protocol}://${domain}${cookie.path}`,
+                        storeId: cookie.storeId
+                    }, deleteCallback)
+                })
             }
         )
     }
