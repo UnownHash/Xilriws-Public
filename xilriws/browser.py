@@ -20,7 +20,7 @@ from .ptc_auth import LoginException
 from .reese_cookie import ReeseCookie
 
 logger = logger.bind(name="Browser")
-HEADLESS = not IS_DEBUG
+HEADLESS = True
 
 
 class ProxyException(Exception):
@@ -267,7 +267,7 @@ class Browser:
             except asyncio.TimeoutError:
                 logger.info("Didn't get confirmation that proxy changed, continuing anyway")
 
-            if self.cookie_future:
+            if self.cookie_future and not self.cookie_future.done():
                 try:
                     await asyncio.wait_for(self.cookie_future, 2)
                 except asyncio.TimeoutError:
