@@ -148,7 +148,7 @@ class Browser:
                 logger.info("Didn't get confirmation that proxy changed, continuing anyway")
 
             if self.last_cookies:
-                if self.cookie_future:
+                if self.cookie_future and not self.cookie_future.done():
                     try:
                         await asyncio.wait_for(self.cookie_future, 2)
                     except asyncio.TimeoutError:
@@ -221,8 +221,8 @@ class Browser:
             return ReeseCookie(all_cookies, proxy.full_url.geturl())
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
+            self.cookie_future = None
             self.consecutive_failures += 1
-            await asyncio.sleep(1)
             return None
         except ProxyException as e:
             logger.error(f"{str(e)} while getting cookie")
@@ -231,6 +231,7 @@ class Browser:
             logger.exception("Exception in browser", e)
 
         logger.error("Error while getting cookie from browser, it will be restarted next time")
+        self.cookie_future = None
         self.consecutive_failures += 1
         self.browser.stop()
         self.tab = None
