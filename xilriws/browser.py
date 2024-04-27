@@ -110,8 +110,15 @@ class Browser:
                         tab=self.tab
                     )
 
-                    await self.tab.get("brave://extensions/?id=lkjcofpbchcclmpeeohebgpapllcjjjj")
-                    # await asyncio.sleep(1000000)
+                    await self.tab.get("brave://extensions/")
+                    await self.tab.wait_for("extensions-manager")
+                    await self.tab.evaluate(
+                        "document.querySelector('extensions-manager').shadowRoot"
+                        ".querySelector('extensions-item-list').shadowRoot"
+                        ".querySelector('extensions-item').shadowRoot"
+                        ".querySelector('cr-button')"
+                        ".click()"
+                    )
                     await self.tab.wait_for("extensions-manager")
 
                     await self.tab.evaluate(
@@ -119,7 +126,8 @@ class Browser:
                         ".querySelector('#viewManager > extensions-detail-view.active').shadowRoot"
                         ".querySelector('#allow-incognito').shadowRoot"
                         ".querySelector('label#label input')"
-                        ".click()")
+                        ".click()"
+                    )
 
                     # await tab.close()
                 # await asyncio.sleep(1000000)

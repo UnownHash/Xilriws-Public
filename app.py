@@ -47,7 +47,7 @@ async def main(cion_mode: bool):
 
     browser = Browser(
         [
-            config.get("fingerprint_random_path", "/xilriws/xilriws-fingerprint-random/"),
+            # config.get("fingerprint_random_path", "/xilriws/xilriws-fingerprint-random/"),
             # config.get("cookie_delete_path", "/xilriws/xilriws-cookie-delete/"),
             config.get("proxy", "/xilriws/xilriws-proxy"),
         ],
