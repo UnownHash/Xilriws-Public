@@ -44,7 +44,6 @@ class Browser:
     tab: nodriver.Tab | None = None
     consecutive_failures = 0
     last_cookies: list[nodriver.cdp.network.CookieParam] | None = None
-    cookie_future: asyncio.Future | None = None
     session_count = 0
 
     def __init__(self, extension_paths: list[str], proxies: ProxyDistributor, ext_comm: ExtensionComm):
@@ -138,6 +137,7 @@ class Browser:
                 if not js_future.done():
                     js_future.set_result(True)
 
+            cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
             await self._open_tab()
 
             proxy_future = await self.ext_comm.add_listener(FINISH_PROXY)
@@ -149,9 +149,9 @@ class Browser:
                 logger.info("Didn't get confirmation that proxy changed, continuing anyway")
 
             if self.last_cookies:
-                if self.cookie_future and not self.cookie_future.done():
+                if cookie_future and not cookie_future.done():
                     try:
-                        await asyncio.wait_for(self.cookie_future, 2)
+                        await asyncio.wait_for(cookie_future, 2)
                     except asyncio.TimeoutError:
                         logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
                 await self.browser.cookies.set_all(self.last_cookies)
@@ -214,13 +214,10 @@ class Browser:
             if not value:
                 raise LoginException("Didn't find reese cookie in browser")
 
-            self.cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
-
             self.consecutive_failures = 0
             return ReeseCookie(all_cookies, proxy.full_url.geturl())
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
-            self.cookie_future = None
             self.consecutive_failures += 1
             return None
         except ProxyException as e:
@@ -230,7 +227,6 @@ class Browser:
             logger.exception("Exception in browser", e)
 
         logger.error("Error while getting cookie from browser, it will be restarted next time")
-        self.cookie_future = None
         self.consecutive_failures += 1
         self._stop_browser()
         return None
@@ -265,11 +261,11 @@ class Browser:
             except asyncio.TimeoutError:
                 logger.info("Didn't get confirmation that proxy changed, continuing anyway")
 
-            if self.cookie_future and not self.cookie_future.done():
-                try:
-                    await asyncio.wait_for(self.cookie_future, 2)
-                except asyncio.TimeoutError:
-                    logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
+            # if self.cookie_future and not self.cookie_future.done():
+            #     try:
+            #         await asyncio.wait_for(self.cookie_future, 2)
+            #     except asyncio.TimeoutError:
+            #         logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
 
             if IS_DEBUG:
                 await self._log_ip()
@@ -331,7 +327,6 @@ class Browser:
             if not value:
                 raise LoginException("Didn't find reese cookie in browser")
 
-            self.cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
             new_tab = await self.tab.get(new_tab=True)
             await self.tab.close()
             self.tab = new_tab
@@ -374,6 +369,10 @@ class Browser:
         logger.info("Opening tab")
         if not self.tab:
             self.tab = await self.browser.get("about:blank")
+        else:
+            tab = await self.tab.get("about:blank", new_tab=True)
+            await self.tab.close()
+            self.tab = tab
 
     async def _new_private_tab(self):
         context_id = await self.browser.connection.send(nodriver.cdp.target.create_browser_context())
@@ -417,6 +416,14 @@ class Browser:
             logger.info(f"Browser IP check: {ip.group(0)}")
         else:
             logger.info("Browser IP check failed")
+
+    async def _log_canvas_fingerprint(self):
+        await self.tab.get("https://browserleaks.com/canvas")
+        await asyncio.sleep(2)
+        c = await self.tab.get_content()
+        for line in c.split("\n"):
+            if "id=\"canvas-hash\"" in line:
+                logger.info(line)
 
     def _stop_browser(self):
         self.browser.stop()
