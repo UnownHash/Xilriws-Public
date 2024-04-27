@@ -8,16 +8,20 @@ let currentProxyCreds = {
 
 ws.onmessage = (event) => {
     console.log('Message from server: ', event.data);
-    const data = JSON.parse(event.data)
+    const message = JSON.parse(event.data)
+    const action = message.action
+    const data = message.data
 
-    currentProxyCreds = {
-        username: data.username,
-        password: data.password
+    if (action === 'setProxy') {
+        currentProxyCreds = {
+            username: data.username,
+            password: data.password
+        }
+        startProxy(data.host, data.port, data.scheme)
     }
-    startProxy(data.host, data.port, data.scheme)
 }
 
-function sendWs(action, detail) {
+function sendWs(action, detail = null) {
     ws.send(JSON.stringify({action: action, detail: detail}))
 }
 
@@ -36,7 +40,7 @@ function startProxy(host, port, scheme) {
     chrome.proxy.settings.set(
         {value: proxyConfig},
         () => {
-            sendWs('finish:proxy', host + ':' + port)
+            sendWs('finish:setProxy', host + ':' + port)
         },
     )
 }
@@ -57,15 +61,12 @@ chrome.tabs.onUpdated.addListener((tabId, details) => {
     }
 
     chrome.tabs.executeScript(
-            tabId,
-            {code: 'localStorage.clear()', runAt: 'document_start'},
-            (result) => {console.log('Cleared local storage')}
-        )
-    // chrome.tabs.executeScript(
-    //     tabId,
-    //     {file: 'stealth.min.js', runAt: 'document_start'},
-    //         (result) => {console.log('stealth.js loaded')}
-    // )
+        tabId,
+        {code: 'localStorage.clear()', runAt: 'document_start'},
+        (result) => {
+            console.log('Cleared local storage')
+        }
+    )
 })
 
 chrome.tabs.onRemoved.addListener(
