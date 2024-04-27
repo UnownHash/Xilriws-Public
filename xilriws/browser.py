@@ -112,7 +112,7 @@ class Browser:
 
                     await self.tab.get("brave://extensions/?id=lkjcofpbchcclmpeeohebgpapllcjjjj")
                     # await asyncio.sleep(1000000)
-                    await self.tab.wait_for("html")
+                    await self.tab.wait_for("extensions-manager")
 
                     await self.tab.evaluate(
                         "document.querySelector('extensions-manager').shadowRoot"
