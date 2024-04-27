@@ -21,6 +21,9 @@ from .reese_cookie import ReeseCookie
 
 logger = logger.bind(name="Browser")
 HEADLESS = not IS_DEBUG
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.3"
+)
 
 
 class ProxyException(Exception):
@@ -69,8 +72,9 @@ class Browser:
         if not self.browser:
             config = nodriver.Config(headless=HEADLESS, browser_executable_path=self.__find_chrome_executable())
             config.add_argument(
-                '--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3"'
+                "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3"
             )
+
             full_command = f"{config.browser_executable_path} {' '.join(config())}"
 
             try:
@@ -91,7 +95,7 @@ class Browser:
                         ],
                         element_id="fingerprintingSelectControlType",
                         new_value="block",
-                        tab=self.tab
+                        tab=self.tab,
                     )
 
                     await self.tab.get("brave://settings/privacy")
@@ -107,29 +111,8 @@ class Browser:
                         ],
                         element_id="dropdownMenu",
                         new_value="disable_non_proxied_udp",
-                        tab=self.tab
+                        tab=self.tab,
                     )
-
-                    await self.tab.get("brave://extensions/")
-                    await self.tab.wait_for("extensions-manager")
-                    await self.tab.evaluate(
-                        "document.querySelector('extensions-manager').shadowRoot"
-                        ".querySelector('extensions-item-list').shadowRoot"
-                        ".querySelector('extensions-item').shadowRoot"
-                        ".querySelector('cr-button')"
-                        ".click()"
-                    )
-                    await self.tab.wait_for("extensions-manager")
-
-                    await self.tab.evaluate(
-                        "document.querySelector('extensions-manager').shadowRoot"
-                        ".querySelector('#viewManager > extensions-detail-view.active').shadowRoot"
-                        ".querySelector('#allow-incognito').shadowRoot"
-                        ".querySelector('label#label input')"
-                        ".click()"
-                    )
-
-                    # await tab.close()
                 # await asyncio.sleep(1000000)
 
             except Exception as e:
@@ -158,8 +141,7 @@ class Browser:
                 if not js_future.done():
                     js_future.set_result(True)
 
-            if not self.tab:
-                await self._new_private_tab()
+            await self._open_tab()
 
             # await asyncio.sleep(10000)
 
@@ -241,8 +223,7 @@ class Browser:
             # if not value:
             #     raise LoginException("Didn't find reese cookie in browser")
 
-            self.cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
-            await self._new_private_tab()
+            # self.cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
 
             # print(target_id)
             # print([t.target_id for t in self.browser.targets])
@@ -251,12 +232,12 @@ class Browser:
             # self.tab = new_tab
 
             self.consecutive_failures = 0
+            self.browser.stop()
             return ReeseCookie(all_cookies, proxy.full_url.geturl())
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
             self.cookie_future = None
             self.consecutive_failures += 1
-            await self._new_private_tab()
             return None
         except ProxyException as e:
             logger.error(f"{str(e)} while getting cookie")
@@ -417,16 +398,35 @@ class Browser:
     async def _new_private_tab(self):
         context_id = await self.browser.connection.send(nodriver.cdp.target.create_browser_context())
         target_id = await self.browser.connection.send(
-            nodriver.cdp.target.create_target(
-                "about:blank", browser_context_id=context_id
-            )
+            nodriver.cdp.target.create_target("about:blank", browser_context_id=context_id)
         )
-        await self.tab.close()
+        if self.tab:
+            await self.tab.close()
         self.tab = next(
             filter(
                 lambda item: item.type_ == "page" and item.target_id == target_id,
                 self.browser.targets,
             )
+        )
+
+    async def _enable_private_extension(self, tab: nodriver.Tab):
+        await tab.get("brave://extensions/")
+        await tab.wait_for("extensions-manager")
+        await tab.evaluate(
+            "document.querySelector('extensions-manager').shadowRoot"
+            ".querySelector('extensions-item-list').shadowRoot"
+            ".querySelector('extensions-item').shadowRoot"
+            ".querySelector('cr-button')"
+            ".click()"
+        )
+        await tab.wait_for("extensions-manager")
+
+        await tab.evaluate(
+            "document.querySelector('extensions-manager').shadowRoot"
+            ".querySelector('#viewManager > extensions-detail-view.active').shadowRoot"
+            ".querySelector('#allow-incognito').shadowRoot"
+            ".querySelector('label#label input')"
+            ".click()"
         )
 
     async def _log_ip(self):
