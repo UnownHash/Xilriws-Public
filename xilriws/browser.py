@@ -20,7 +20,7 @@ from .ptc_auth import LoginException
 from .reese_cookie import ReeseCookie
 
 logger = logger.bind(name="Browser")
-HEADLESS = True
+HEADLESS = not IS_DEBUG
 
 
 class ProxyException(Exception):
@@ -81,6 +81,7 @@ class Browser:
                 logger.info(f"Starting browser: `{full_command}`")
 
                 if "brave" in self.browser.config.browser_executable_path.lower():
+                    self.tab = await self.browser.get("brave://settings/shields")
                     await self.set_setting(
                         shadow_roots=[
                             "settings-ui",
@@ -90,8 +91,10 @@ class Browser:
                         ],
                         element_id="fingerprintingSelectControlType",
                         new_value="block",
-                        uri="brave://settings/shields"
+                        tab=self.tab
                     )
+
+                    await self.tab.get("brave://settings/privacy")
                     await self.set_setting(
                         shadow_roots=[
                             "settings-ui",
@@ -104,8 +107,22 @@ class Browser:
                         ],
                         element_id="dropdownMenu",
                         new_value="disable_non_proxied_udp",
-                        uri="brave://settings/privacy"
+                        tab=self.tab
                     )
+
+                    await self.tab.get("brave://extensions/?id=lkjcofpbchcclmpeeohebgpapllcjjjj")
+                    # await asyncio.sleep(1000000)
+                    await self.tab.wait_for("html")
+
+                    await self.tab.evaluate(
+                        "document.querySelector('extensions-manager').shadowRoot"
+                        ".querySelector('#viewManager > extensions-detail-view.active').shadowRoot"
+                        ".querySelector('#allow-incognito').shadowRoot"
+                        ".querySelector('label#label input')"
+                        ".click()")
+
+                    # await tab.close()
+                # await asyncio.sleep(1000000)
 
             except Exception as e:
                 logger.error(str(e))
@@ -133,7 +150,8 @@ class Browser:
                 if not js_future.done():
                     js_future.set_result(True)
 
-            await self._open_tab()
+            if not self.tab:
+                await self._new_private_tab()
 
             # await asyncio.sleep(10000)
 
@@ -141,6 +159,7 @@ class Browser:
 
             proxy_future = await self.ext_comm.add_listener(FINISH_PROXY)
             await self.proxies.change_proxy()
+            # await asyncio.sleep(1000000)
 
             try:
                 await asyncio.wait_for(proxy_future, 2)
@@ -188,7 +207,7 @@ class Browser:
                         code = code_match.group(1)
                     else:
                         code = "unknown"
-                    raise LoginException(f"Didn't pass JS check. Code: {code}")
+                    raise LoginException(f"Didn't pass JS check. Code {code}")
 
             logger.info("Getting cookies from browser")
             value: str | None = None
@@ -196,7 +215,8 @@ class Browser:
             attempts = 10
             while not value and attempts > 0:
                 attempts -= 1
-                cookies = await self.browser.cookies.get_all()
+
+                cookies = await self.tab.send(nodriver.cdp.network.get_cookies())
                 for cookie in cookies:
                     if cookie.name == "reese84":
                         logger.info("Got a cookie")
@@ -208,14 +228,19 @@ class Browser:
                 else:
                     all_cookies = {c.name: c.value for c in cookies}
                     self.last_cookies = cookies
+            # await asyncio.sleep(100000)
 
-            if not value:
-                raise LoginException("Didn't find reese cookie in browser")
+            # if not value:
+            #     raise LoginException("Didn't find reese cookie in browser")
 
             self.cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
-            new_tab = await self.tab.get(new_tab=True)
-            await self.tab.close()
-            self.tab = new_tab
+            await self._new_private_tab()
+
+            # print(target_id)
+            # print([t.target_id for t in self.browser.targets])
+            # new_tab = await self.tab.get("about:blank", new_window=True)
+            # await self.tab.close()
+            # self.tab = new_tab
 
             self.consecutive_failures = 0
             return ReeseCookie(all_cookies, proxy.full_url.geturl())
@@ -223,6 +248,7 @@ class Browser:
             logger.error(f"{str(e)} while getting cookie")
             self.cookie_future = None
             self.consecutive_failures += 1
+            await self._new_private_tab()
             return None
         except ProxyException as e:
             logger.error(f"{str(e)} while getting cookie")
@@ -361,10 +387,8 @@ class Browser:
         self.browser = None
         return None
 
-    async def set_setting(self, shadow_roots: list[str], element_id: str, new_value: str, uri: str | None = None):
-        if uri is not None:
-            self.tab = await self.browser.get(uri)
-            await self.tab.wait_for("html")
+    async def set_setting(self, shadow_roots: list[str], element_id: str, new_value: str, tab: nodriver.Tab):
+        await tab.wait_for(shadow_roots[0])
 
         inject_js = "const element=document."
         inject_js += ".".join(f"querySelector('{s}').shadowRoot" for s in shadow_roots)
@@ -372,16 +396,30 @@ class Browser:
         inject_js += f"element.value='{new_value}';"
         inject_js += "element.dispatchEvent(new Event('change'));"
 
-        print(inject_js)
         try:
-            await self.tab.evaluate(inject_js)
+            await tab.evaluate(inject_js)
         except Exception as e:
             logger.warning(f"{str(e)} while changing setting {element_id}, ignoring")
 
     async def _open_tab(self):
         logger.info("Opening tab")
         if not self.tab:
-            self.tab = await self.browser.get("chrome://extensions" if IS_DEBUG else "about:blank")
+            self.tab = await self.browser.get("about:blank")
+
+    async def _new_private_tab(self):
+        context_id = await self.browser.connection.send(nodriver.cdp.target.create_browser_context())
+        target_id = await self.browser.connection.send(
+            nodriver.cdp.target.create_target(
+                "about:blank", browser_context_id=context_id
+            )
+        )
+        await self.tab.close()
+        self.tab = next(
+            filter(
+                lambda item: item.type_ == "page" and item.target_id == target_id,
+                self.browser.targets,
+            )
+        )
 
     async def _log_ip(self):
         await self.tab.get(url="https://api.ipify.org/")

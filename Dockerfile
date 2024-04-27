@@ -14,6 +14,7 @@ RUN cp -r Xilriws-Public/xilriws-proxy /xilriws/xilriws-proxy
 RUN apt install -y software-properties-common
 RUN apt update -y
 RUN apt install -y python3 python3-pip
+RUN pip install poetry --break-system-packages
 # RUN add-apt-repository ppa:savoury1/chromium
 # RUN apt update && apt install -y chromium-browser
 RUN apt install curl
@@ -22,7 +23,6 @@ RUN echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] 
 RUN apt update -y
 RUN apt install -y brave-browser
 
-RUN pip install poetry
 COPY . .
 RUN poetry install
 

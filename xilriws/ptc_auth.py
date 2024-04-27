@@ -58,6 +58,7 @@ class PtcAuth:
                 timeout=10,
                 proxy=cookie.proxy,
                 cookies=cookie.cookies,
+                impersonate="chrome120"
             ) as client:
                 logger.info("Calling OAUTH page")
 

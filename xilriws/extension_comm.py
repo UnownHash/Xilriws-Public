@@ -9,7 +9,7 @@ from loguru import logger
 
 logger = logger.bind(name="ExtComm")
 
-FINISH_PROXY = "finish:proxy"
+FINISH_PROXY = "finish:setProxy"
 FINISH_COOKIE_PURGE = "finish:cookiePurge"
 
 
@@ -46,9 +46,12 @@ class ExtensionComm:
         finally:
             self.clients.remove(websocket)
 
-    async def send(self, data: dict[str, Any]):
+    async def send(self, action: str, data: dict[str, Any] | None = None):
         message = json.dumps(
-            data
+            {
+                "action": action,
+                "data": data
+            }
         )
         logger.debug(f"Sending WS data: {message}")
         for client in self.clients:
