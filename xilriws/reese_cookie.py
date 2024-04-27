@@ -76,7 +76,7 @@ class CookieMonster:
                 while len(self.cookies) < COOKIE_STORAGE:
                     proxy = await self.proxy_dispenser.get_auth_proxy()
                     self.proxies.set_next_proxy(proxy)
-                    await self.__get_one_cookie(proxy)
+                    await self.__get_one_cookie()
                     logger.info(f"Cookie storage at {len(self.cookies)}/{COOKIE_STORAGE}")
             except Exception as e:
                 logger.exception("unahdnled excpetion while filling cookie storage, please report", e)
@@ -97,10 +97,10 @@ class CookieMonster:
 
             return next_cookie
 
-    async def __get_one_cookie(self, proxy: Proxy) -> ReeseCookie | None:
+    async def __get_one_cookie(self) -> ReeseCookie | None:
         logger.info("Opening browser to get a cookie")
 
-        cookie = await self.browser.get_reese_cookie(proxy)
+        cookie = await self.browser.get_reese_cookie()
 
         if not cookie:
             return None

@@ -66,8 +66,7 @@ class Browser:
 
             if self.session_count % 100 == 0:
                 logger.info("Time for a browser restart")
-                self.browser.stop()
-                self.browser = None
+                self._stop_browser()
 
         if not self.browser:
             config = nodriver.Config(headless=HEADLESS, browser_executable_path=self.__find_chrome_executable())
@@ -75,13 +74,12 @@ class Browser:
                 "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3"
             )
 
-            full_command = f"{config.browser_executable_path} {' '.join(config())}"
-
             try:
                 for path in self.extension_paths:
                     config.add_extension(path)
 
                 self.browser = await nodriver.start(config)
+                full_command = f"{config.browser_executable_path} {' '.join(config())}"
                 logger.info(f"Starting browser: `{full_command}`")
 
                 if "brave" in self.browser.config.browser_executable_path.lower():
@@ -113,9 +111,8 @@ class Browser:
                         new_value="disable_non_proxied_udp",
                         tab=self.tab,
                     )
-                # await asyncio.sleep(1000000)
-
             except Exception as e:
+                full_command = f"{config.browser_executable_path} {' '.join(config())}"
                 logger.error(str(e))
                 logger.error(
                     f"Error while starting the browser. Please confirm you can start it manually by running "
@@ -123,7 +120,7 @@ class Browser:
                 )
                 raise e
 
-    async def get_reese_cookie(self, proxy: Proxy) -> ReeseCookie | None:
+    async def get_reese_cookie(self) -> ReeseCookie | None:
         try:
             await self.start_browser()
         except Exception:
@@ -143,13 +140,8 @@ class Browser:
 
             await self._open_tab()
 
-            # await asyncio.sleep(10000)
-
-            # await self.tab.set_window_size(0, 0, 720, 1080)
-
             proxy_future = await self.ext_comm.add_listener(FINISH_PROXY)
             await self.proxies.change_proxy()
-            # await asyncio.sleep(1000000)
 
             try:
                 await asyncio.wait_for(proxy_future, 2)
@@ -196,7 +188,7 @@ class Browser:
                     if code_match and code_match.group(1):
                         code = code_match.group(1)
                     else:
-                        code = "unknown"
+                        code = "<unknown>"
                     raise LoginException(f"Didn't pass JS check. Code {code}")
 
             logger.info("Getting cookies from browser")
@@ -218,21 +210,13 @@ class Browser:
                 else:
                     all_cookies = {c.name: c.value for c in cookies}
                     self.last_cookies = cookies
-            # await asyncio.sleep(100000)
 
-            # if not value:
-            #     raise LoginException("Didn't find reese cookie in browser")
+            if not value:
+                raise LoginException("Didn't find reese cookie in browser")
 
-            # self.cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
-
-            # print(target_id)
-            # print([t.target_id for t in self.browser.targets])
-            # new_tab = await self.tab.get("about:blank", new_window=True)
-            # await self.tab.close()
-            # self.tab = new_tab
+            self.cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
 
             self.consecutive_failures = 0
-            self.browser.stop()
             return ReeseCookie(all_cookies, proxy.full_url.geturl())
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
@@ -248,9 +232,7 @@ class Browser:
         logger.error("Error while getting cookie from browser, it will be restarted next time")
         self.cookie_future = None
         self.consecutive_failures += 1
-        self.browser.stop()
-        self.tab = None
-        self.browser = None
+        self._stop_browser()
         return None
 
     async def get_join_tokens(self) -> CionResponse | None:
@@ -371,9 +353,7 @@ class Browser:
             logger.exception("Exception during browser", e)
 
         logger.error("Error while getting cookie from browser, it will be restarted next time")
-        self.browser.stop()
-        self.tab = None
-        self.browser = None
+        self._stop_browser()
         return None
 
     async def set_setting(self, shadow_roots: list[str], element_id: str, new_value: str, tab: nodriver.Tab):
@@ -437,6 +417,11 @@ class Browser:
             logger.info(f"Browser IP check: {ip.group(0)}")
         else:
             logger.info("Browser IP check failed")
+
+    def _stop_browser(self):
+        self.browser.stop()
+        self.tab = None
+        self.browser = None
 
     def __find_chrome_executable(self, return_all=False):
         candidates = []
