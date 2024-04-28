@@ -17,6 +17,11 @@ class ProxyDispenser:
                 if not proxy_url:
                     continue
 
+                proxy_url = proxy_url.strip()
+
+                if proxy_url.lower() == "local":
+                    proxy_url = None
+
                 try:
                     self.proxies.append(Proxy(proxy_url))
                 except Exception as e:

@@ -54,7 +54,7 @@ class ProxyDistributor:
     def set_next_proxy(self, proxy: Proxy):
         self.next_proxy = proxy
 
-    async def change_proxy(self, proxy: Proxy | None = None):
+    async def change_proxy(self, proxy: Proxy | None = None) -> bool:
         if proxy is not None:
             self.set_next_proxy(proxy)
 
@@ -62,10 +62,10 @@ class ProxyDistributor:
             self.current_proxy = copy(self.next_proxy)
 
         if self.current_proxy is None:
-            return
+            return False
 
         if not self.current_proxy.host:
-            return
+            return False
 
         logger.info(f"Switching to Proxy {self.current_proxy.host}:{self.current_proxy.port}")
 
@@ -79,3 +79,4 @@ class ProxyDistributor:
                 "username": self.current_proxy.username,
             }
         )
+        return True

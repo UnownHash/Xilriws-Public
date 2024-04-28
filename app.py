@@ -10,7 +10,7 @@ import sys
 import uvicorn
 from loguru import logger
 
-from xilriws.browser import Browser
+from xilriws.browser import Browser, BrowserJoin, BrowserAuth
 from xilriws.mode import CionMode, AuthMode
 from xilriws.proxy import ProxyDistributor
 from xilriws.proxy_dispenser import ProxyDispenser
@@ -45,22 +45,23 @@ async def main(cion_mode: bool):
     task_creator.create_task(ext_comm.start())
     proxies = ProxyDistributor(ext_comm)
 
-    browser = Browser(
-        [
+    browser_args = {
+        "extension_paths": [
             # config.get("fingerprint_random_path", "/xilriws/xilriws-fingerprint-random/"),
             # config.get("cookie_delete_path", "/xilriws/xilriws-cookie-delete/"),
             config.get("proxy", "/xilriws/xilriws-proxy"),
         ],
-        proxies,
-        ext_comm
-    )
+        "proxies": proxies,
+        "ext_comm": ext_comm
+    }
+
     proxy_dispenser = ProxyDispenser(config.get("proxies_list_path", "/xilriws/proxies.txt"))
 
     if cion_mode:
         logger.info("Starting in Cion Mode")
-        mode = CionMode(browser, proxies, proxy_dispenser)
+        mode = CionMode(BrowserJoin(**browser_args), proxies, proxy_dispenser)
     else:
-        mode = AuthMode(browser, proxies, proxy_dispenser)
+        mode = AuthMode(BrowserAuth(**browser_args), proxies, proxy_dispenser)
 
     await mode.prepare()
 
