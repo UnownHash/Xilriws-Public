@@ -46,10 +46,6 @@ class BrowserJoin(Browser):
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening Join page")
 
-            await self.tab.get(url="https://access.pokemon.com/login")
-            await asyncio.sleep(2)
-            await self.tab.get(url=JOIN_URL)
-
             html = await self.tab.get_content()
             if "neterror" in html.lower():
                 proxy.invalidate()  # TODO this doesn't actually do anything
@@ -61,8 +57,6 @@ class BrowserJoin(Browser):
                 logger.info("JS check done. reloading")
             except asyncio.TimeoutError:
                 raise LoginException("Timeout on JS challenge")
-
-            await asyncio.sleep(10000)
 
             await self.tab.reload()
             html = await self.tab.get_content()
