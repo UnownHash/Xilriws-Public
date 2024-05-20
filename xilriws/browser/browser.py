@@ -11,8 +11,8 @@ from loguru import logger
 
 from xilriws.debug import IS_DEBUG
 from xilriws.extension_comm import ExtensionComm
+from xilriws.extension_comm import FINISH_PROXY
 from xilriws.proxy import ProxyDistributor
-from xilriws.extension_comm import FINISH_PROXY, FINISH_COOKIE_PURGE
 from xilriws.ptc_auth import LoginException
 
 logger = logger.bind(name="Browser")
@@ -78,7 +78,7 @@ class Browser:
                             "settings-default-brave-shields-page",
                         ],
                         element_id="fingerprintingSelectControlType",
-                        new_value="block",
+                        new_value="allow",
                         tab=self.tab,
                     )
 
@@ -89,7 +89,6 @@ class Browser:
                             "settings-main",
                             "settings-basic-page",
                             "settings-privacy-page",
-                            "settings-personalization-options",
                             "settings-brave-personalization-options",
                             "settings-dropdown-menu",
                         ],
