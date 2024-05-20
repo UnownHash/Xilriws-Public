@@ -32,10 +32,16 @@ class ProxyDispenser:
             self.proxies.append(Proxy(None))
 
         self.current_auth_index = 0
+        self.current_proxy_uses = 0
 
     async def get_auth_proxy(self) -> Proxy:
+        self.current_proxy_uses += 1
         proxy = self.proxies[self.current_auth_index]
-        self.current_auth_index = (self.current_auth_index + 1) % len(self.proxies)
+
+        if self.current_proxy_uses > 100:
+            self.current_auth_index = (self.current_auth_index + 1) % len(self.proxies)
+            self.current_proxy_uses = 0
+
         return proxy
 
         # while True:

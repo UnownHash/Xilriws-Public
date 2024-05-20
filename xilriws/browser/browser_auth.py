@@ -19,7 +19,7 @@ logger = logger.bind(name="Browser")
 
 
 class BrowserAuth(Browser):
-    async def get_reese_cookie(self) -> ReeseCookie | None:
+    async def get_reese_cookie(self, proxy_changed: bool) -> ReeseCookie | None:
         try:
             await self.start_browser()
         except Exception:
@@ -32,12 +32,13 @@ class BrowserAuth(Browser):
             await self.new_tab()
             await self.change_proxy()
 
+            if cookie_future and not cookie_future.done():
+                try:
+                    await asyncio.wait_for(cookie_future, 2)
+                except asyncio.TimeoutError:
+                    logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
+
             if self.last_cookies:
-                if cookie_future and not cookie_future.done():
-                    try:
-                        await asyncio.wait_for(cookie_future, 2)
-                    except asyncio.TimeoutError:
-                        logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
                 await self.browser.cookies.set_all(self.last_cookies)
 
             proxy = self.proxies.current_proxy
