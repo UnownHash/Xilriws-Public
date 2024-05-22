@@ -22,6 +22,8 @@ class BrowserAuth(Browser):
     first_run = True
 
     async def get_reese_cookie(self, proxy_changed: bool) -> ReeseCookie | None:
+        proxy = self.proxies.current_proxy
+
         try:
             await self.start_browser()
         except Exception:
@@ -45,8 +47,6 @@ class BrowserAuth(Browser):
             if self.last_cookies:
                 await self.browser.cookies.set_all(self.last_cookies)
 
-            proxy = self.proxies.current_proxy
-
             if IS_DEBUG:
                 await self.log_ip()
 
@@ -56,7 +56,6 @@ class BrowserAuth(Browser):
 
             html = await self.tab.get_content()
             if "neterror" in html.lower():
-                proxy.invalidate()  # TODO this doesn't actually do anything
                 raise ProxyException(f"Page couldn't be reached (Proxy: {proxy.url})")
 
             imp_code, imp_reason = ptc_utils.get_imperva_error_code(html)
@@ -90,7 +89,9 @@ class BrowserAuth(Browser):
             self.consecutive_failures += 1
             return None
         except ProxyException as e:
+            proxy.invalidate()
             logger.error(f"{str(e)} while getting cookie")
+            self.stop_browser()
             return None
         except Exception as e:
             logger.exception("Exception in browser", e)
