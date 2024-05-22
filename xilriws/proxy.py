@@ -51,8 +51,12 @@ class ProxyDistributor:
         self.current_proxy: Proxy | None = None
         self.ext_comm = ext_comm
 
-    def set_next_proxy(self, proxy: Proxy):
+    def set_next_proxy(self, proxy: Proxy) -> bool:
+        if self.current_proxy == proxy:
+            return False
+
         self.next_proxy = proxy
+        return True
 
     async def change_proxy(self, proxy: Proxy | None = None) -> bool:
         if proxy is not None:
