@@ -8,9 +8,10 @@ from loguru import logger
 from curl_cffi import requests
 
 from .constants import ACCESS_URL, COOKIE_STORAGE
+from xilriws.ptc import ptc_utils
 
 if TYPE_CHECKING:
-    from .reese_cookie import CookieMonster
+    from .reese_cookie import CookieMonster, ReeseCookie
 
 logger = logger.bind(name="PTC")
 
@@ -56,9 +57,9 @@ class PtcAuth:
                 allow_redirects=True,
                 verify=False,
                 timeout=10,
-                proxy=cookie.proxy,
+                proxy=cookie.proxy.full_url.geturl(),
                 cookies=cookie.cookies,
-                impersonate="chrome120"
+                impersonate="chrome120",
             ) as client:
                 logger.info("Calling OAUTH page")
 
@@ -69,9 +70,7 @@ class PtcAuth:
                     continue
 
                 if resp.status_code == 403:
-                    # TODO it doesn't seem to actually invalidate this cookie
-                    logger.info("Cookie expired. Invalidating and trying again")
-                    await self.cookie_monster.remove_cookie(cookie)
+                    await self.handle_imperva_error(resp.text, cookie)
                     continue
 
                 if resp.status_code != 200:
@@ -92,8 +91,7 @@ class PtcAuth:
                     continue
 
                 if login_resp.status_code == 403:
-                    logger.info("Cookie expired. Invalidating and trying again")
-                    await self.cookie_monster.remove_cookie(cookie)
+                    await self.handle_imperva_error(login_resp.text, cookie)
                     continue
 
                 if login_resp.status_code != 200:
@@ -127,8 +125,7 @@ class PtcAuth:
                         continue
 
                     if resp_consent.status_code == 403:
-                        logger.info("Cookie expired. Invalidating and trying again")
-                        await self.cookie_monster.remove_cookie(cookie)
+                        await self.handle_imperva_error(resp_consent.text, cookie)
                         continue
 
                     if resp_consent.status_code != 200:
@@ -139,6 +136,14 @@ class PtcAuth:
                 return login_code
 
         raise LoginException("Exceeded max retries during PTC auth")
+
+    async def handle_imperva_error(self, html: str, cookie: ReeseCookie):
+        imp_code, imp_reason = ptc_utils.get_imperva_error_code(html)
+        await self.cookie_monster.remove_cookie(cookie)
+        cookie.proxy.rate_limited()
+        logger.warning(
+            f"Error code {imp_code} ({imp_reason}) during PTC request, trying again (Proxy: {cookie.proxy.url})"
+        )
 
     def check_error_on_login_page(self, content: str):
         if "Your username or password is incorrect." in content:

@@ -18,7 +18,7 @@ logger = logger.bind(name="Cookie")
 
 
 class ReeseCookie:
-    def __init__(self, cookies: dict[str, str], proxy: str):
+    def __init__(self, cookies: dict[str, str], proxy: Proxy):
         self.value: str = "value"
         self.expiration: float = time.time() + EXPIRATION
         self.uses: int = 0

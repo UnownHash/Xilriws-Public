@@ -11,6 +11,9 @@ if TYPE_CHECKING:
     from .extension_comm import ExtensionComm
 
 
+PROXY_TIMEOUT = 60 * 60
+
+
 class Proxy:
     def __init__(self, url: str | None):
         if isinstance(url, str):
@@ -35,6 +38,9 @@ class Proxy:
     def url(self):
         return f"{self.host}:{self.port}"
 
+    def is_good(self):
+        return not self.invalidated and self.last_limited + PROXY_TIMEOUT < time.time()
+
     def rate_limited(self):
         self.last_limited = time.time()
 
@@ -52,7 +58,7 @@ class ProxyDistributor:
         self.ext_comm = ext_comm
 
     def set_next_proxy(self, proxy: Proxy) -> bool:
-        if self.current_proxy == proxy:
+        if self.current_proxy.host == proxy.host:
             return False
 
         self.next_proxy = proxy

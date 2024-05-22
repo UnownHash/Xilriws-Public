@@ -61,7 +61,7 @@ class BrowserAuth(Browser):
 
             imp_code, imp_reason = ptc_utils.get_imperva_error_code(html)
             if imp_code not in ("15", "?"):
-                proxy.invalidate()
+                proxy.rate_limited()
                 raise LoginException(f"Error code {imp_code} ({imp_reason}) with Proxy ({proxy.url})")
             else:
                 logger.info("Successfully got error 15 page")
@@ -84,7 +84,7 @@ class BrowserAuth(Browser):
             all_cookies = await self.get_cookies()
 
             self.consecutive_failures = 0
-            return ReeseCookie(all_cookies, proxy.full_url.geturl())
+            return ReeseCookie(all_cookies, proxy)
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
             self.consecutive_failures += 1
