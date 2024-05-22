@@ -22,7 +22,7 @@ class BrowserAuth(Browser):
     first_run = True
 
     async def get_reese_cookie(self, proxy_changed: bool) -> ReeseCookie | None:
-        proxy = self.proxies.current_proxy
+        proxy = self.proxies.next_proxy
 
         try:
             await self.start_browser()
@@ -34,7 +34,8 @@ class BrowserAuth(Browser):
             cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
 
             await self.new_tab()
-            await self.change_proxy()
+            if proxy_changed:
+                await self.change_proxy()
 
             if not self.first_run and cookie_future and not cookie_future.done():
                 try:
