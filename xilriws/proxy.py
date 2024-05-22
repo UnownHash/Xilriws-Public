@@ -58,7 +58,7 @@ class ProxyDistributor:
         self.ext_comm = ext_comm
 
     def set_next_proxy(self, proxy: Proxy) -> bool:
-        if self.current_proxy.host == proxy.host:
+        if self.current_proxy and self.current_proxy.host == proxy.host:
             return False
 
         self.next_proxy = proxy
