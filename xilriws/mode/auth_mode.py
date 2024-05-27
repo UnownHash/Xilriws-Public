@@ -39,10 +39,6 @@ class ResponseData:
 
 @post("/api/v1/login-code")
 async def auth_endpoint(request: Request, ptc_auth: PtcAuth, data: RequestData) -> Response[ResponseData]:
-    if request.headers.get("User-Agent", "") not in ("Go-http-client/1.1", "axios/1.6.8"):
-        logger.critical("Please use Dragonite or TMS to connect to Xilriws")
-        return Response(ResponseData(status=ResponseStatus.ERROR.name), status_code=HTTP_403_FORBIDDEN)
-
     try:
         login_code = await ptc_auth.auth(data.username, data.password, data.url)
 
