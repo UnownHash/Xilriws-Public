@@ -78,7 +78,7 @@ class Browser:
                             "settings-default-brave-shields-page",
                         ],
                         element_id="fingerprintingSelectControlType",
-                        new_value="allow",
+                        new_value="block",
                         tab=self.tab,
                     )
 
