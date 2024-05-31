@@ -156,6 +156,8 @@ class PtcAuth:
         elif "your account has been disabled for" in content:
             logger.error("BROWSER: Account is temporarily disabled")
             raise InvalidCredentials("Account temporarily disabled")
+        elif "We are unable to log you in to this account. Please contact Customer Service for additional details." in content:
+            raise PtcBanned()
 
     def __extract_login_code(self, html) -> str | None:
         matches = re.search(r"pokemongo://state=(.*?)(?:,code=(.*?))?(?='|$)", html)
