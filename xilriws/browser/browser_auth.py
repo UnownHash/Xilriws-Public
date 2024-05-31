@@ -72,7 +72,7 @@ class BrowserAuth(Browser):
                 if "log in" not in new_html.lower():
                     logger.debug(new_html)
                     proxy.rate_limited()
-                    imp_code, imp_reason = ptc_utils.get_imperva_error_code(html)
+                    imp_code, imp_reason = ptc_utils.get_imperva_error_code(new_html)
                     raise LoginException(f"Didn't pass JS check. Code {imp_code} ({imp_reason})")
 
             logger.info("Getting cookies from browser")

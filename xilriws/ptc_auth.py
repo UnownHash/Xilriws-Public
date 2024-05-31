@@ -27,6 +27,10 @@ class InvalidCredentials(LoginException):
     pass
 
 
+class PtcBanned(Exception):
+    """account is ptc banned, report as such"""
+    pass
+
 class PtcAuth:
     def __init__(self, cookie_monster: CookieMonster):
         self.cookie_monster = cookie_monster
@@ -68,14 +72,10 @@ class PtcAuth:
                     logger.error(f"Error {str(e)} during OAUTH")
                     continue
 
-                if resp.status_code == 403:
+                if not self.__check_status(resp):
                     # TODO it doesn't seem to actually invalidate this cookie
-                    logger.info("Cookie expired. Invalidating and trying again")
                     await self.cookie_monster.remove_cookie(cookie)
                     continue
-
-                if resp.status_code != 200:
-                    raise LoginException(f"OAUTH: {resp.status_code} but expected 200")
 
                 csrf, challenge = self.__extract_csrf_and_challenge(resp.text)
 
@@ -91,13 +91,10 @@ class PtcAuth:
                     logger.error(f"Error {str(e)} during LOGIN")
                     continue
 
-                if login_resp.status_code == 403:
-                    logger.info("Cookie expired. Invalidating and trying again")
+                if not self.__check_status(resp):
+                    # TODO it doesn't seem to actually invalidate this cookie
                     await self.cookie_monster.remove_cookie(cookie)
                     continue
-
-                if login_resp.status_code != 200:
-                    raise LoginException(f"LOGIN: {login_resp.status_code} but expected 200")
 
                 login_code = self.__extract_login_code(login_resp.text)
 
@@ -126,19 +123,31 @@ class PtcAuth:
                         logger.error(f"Error {str(e)} during CONSENT")
                         continue
 
-                    if resp_consent.status_code == 403:
-                        logger.info("Cookie expired. Invalidating and trying again")
+                    if not self.__check_status(resp):
+                        # TODO it doesn't seem to actually invalidate this cookie
                         await self.cookie_monster.remove_cookie(cookie)
                         continue
 
-                    if resp_consent.status_code != 200:
-                        raise LoginException(f"Consent: {resp_consent.status_code} but expected 200")
                     login_code = self.__extract_login_code(resp_consent.text)
                     if not login_code:
                         raise LoginException("No Login Code after consent, please check account")
                 return login_code
 
         raise LoginException("Exceeded max retries during PTC auth")
+
+    def __check_status(self, resp: httpx.Response) -> bool:
+        if resp.status_code == 403:
+            logger.info("Cookie expired. Invalidating and trying again")
+            return False
+
+        if resp.status_code == 418:
+            raise PtcBanned()
+
+        if resp.status_code != 200:
+            raise LoginException(f"PTC: {resp.status_code} but expected 200")
+
+        return True
+
 
     def check_error_on_login_page(self, content: str):
         if "Your username or password is incorrect." in content:

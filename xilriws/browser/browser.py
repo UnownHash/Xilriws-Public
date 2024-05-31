@@ -89,7 +89,6 @@ class Browser:
                             "settings-main",
                             "settings-basic-page",
                             "settings-privacy-page",
-                            "settings-personalization-options",
                             "settings-brave-personalization-options",
                             "settings-dropdown-menu",
                         ],

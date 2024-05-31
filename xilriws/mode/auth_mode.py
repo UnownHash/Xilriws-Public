@@ -5,11 +5,11 @@ from enum import Enum
 
 from litestar import Litestar, post, Response, Request
 from litestar.di import Provide
-from litestar.status_codes import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR, HTTP_200_OK, HTTP_403_FORBIDDEN
+from litestar.status_codes import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR, HTTP_200_OK, HTTP_418_IM_A_TEAPOT
 from loguru import logger
 
 from xilriws.browser import Browser
-from xilriws.ptc_auth import PtcAuth, LoginException, InvalidCredentials
+from xilriws.ptc_auth import PtcAuth, LoginException, InvalidCredentials, PtcBanned
 from xilriws.reese_cookie import CookieMonster
 from .basic_mode import BasicMode
 from xilriws.proxy import ProxyDistributor, Proxy
@@ -29,6 +29,7 @@ class ResponseStatus(Enum):
     SUCCESS = 1
     ERROR = 2
     INVALID = 3
+    BANNED = 4
 
 
 @dataclass
@@ -49,6 +50,9 @@ async def auth_endpoint(request: Request, ptc_auth: PtcAuth, data: RequestData) 
     except InvalidCredentials:
         logger.warning("400 Bad Request: Invalid credentials")
         return Response(ResponseData(status=ResponseStatus.INVALID.name), status_code=HTTP_400_BAD_REQUEST)
+    except PtcBanned:
+        logger.warning("418: account is ptc-banned")
+        return Response(ResponseData(status=ResponseStatus.BANNED.name), status_code=HTTP_418_IM_A_TEAPOT)
     except LoginException as e:
         logger.error(f"Error: {str(e)}")
     except Exception as e:
