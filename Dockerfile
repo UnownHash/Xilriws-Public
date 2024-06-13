@@ -10,6 +10,7 @@ RUN git clone https://github.com/UnownHash/Xilriws-Public
 RUN cp -r Xilriws-Public/xilriws-fingerprint-random /xilriws/xilriws-fingerprint-random
 RUN cp -r Xilriws-Public/xilriws-cookie-delete /xilriws/xilriws-cookie-delete
 RUN cp -r Xilriws-Public/xilriws-proxy /xilriws/xilriws-proxy
+RUN cp -r Xilriws-Public/xilriws-targetfp /xilriws/xilriws-targetfp
 
 RUN apt install -y software-properties-common
 RUN apt update -y
