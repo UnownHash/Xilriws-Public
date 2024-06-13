@@ -53,13 +53,13 @@ class BrowserAuth(Browser):
 
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening PTC")
-            await self.tab.get(url=ACCESS_URL + "login")
 
             try:
+                await asyncio.wait_for(self.tab.get(url=ACCESS_URL + "login"), timeout=60)
                 html = await asyncio.wait_for(self.tab.get_content(), timeout=60)
             except asyncio.TimeoutError:
                 raise ProxyException(f"Page timed out (Proxy: {proxy.url})")
-            
+
             if "neterror" in html.lower():
                 raise ProxyException(f"Page couldn't be reached (Proxy: {proxy.url})")
 
