@@ -55,7 +55,11 @@ class BrowserAuth(Browser):
             logger.info("Opening PTC")
             await self.tab.get(url=ACCESS_URL + "login")
 
-            html = await self.tab.get_content()
+            try:
+                html = await asyncio.wait_for(self.tab.get_content(), timeout=60)
+            except asyncio.TimeoutError:
+                raise ProxyException(f"Page timed out (Proxy: {proxy.url})")
+            
             if "neterror" in html.lower():
                 raise ProxyException(f"Page couldn't be reached (Proxy: {proxy.url})")
 
