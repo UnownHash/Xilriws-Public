@@ -48,8 +48,8 @@ class BrowserAuth(Browser):
             if self.last_cookies:
                 await self.browser.cookies.set_all(self.last_cookies)
 
-            if IS_DEBUG:
-                await self.log_ip()
+            # if IS_DEBUG:
+            #     await self.log_ip()
 
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening PTC")
@@ -67,11 +67,14 @@ class BrowserAuth(Browser):
                 logger.info("Successfully got error 15 page")
                 if not js_future.done():
                     try:
-                        await asyncio.wait_for(js_future, timeout=10)
+                        logger.info("Waiting for JS check")
+                        await asyncio.wait_for(js_future, timeout=20)
                         self.tab.handlers.clear()
                         logger.info("JS check done. reloading")
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
+                else:
+                    logger.debug("JS check already done, continuing")
                 await self.tab.reload()
                 new_html = await self.tab.get_content()
                 if "log in" not in new_html.lower():

@@ -1,5 +1,9 @@
 import re
 
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+)
+
 
 IMPERVA_ERROR_CODES = {
     "3": "There was an error in processing the request",
@@ -7,6 +11,7 @@ IMPERVA_ERROR_CODES = {
     "5": "There was an error in processing the server response",
     "8": "The proxy failed to connect to the web server, due to TCP connection rejection (TCP Reset)",
     "9": "Error code 9",
+    "12": "Captcha",
     "14": "This request was blocked by our security service",
     "15": "General bot protection",
     "16": "IP is permanently blocked",
@@ -36,7 +41,7 @@ IMPERVA_ERROR_CODES = {
 
 
 def get_imperva_error_code(text: str) -> tuple[str, str]:
-    code_match = re.search(r";edet=(\d*)&", text)
+    code_match = re.search(r"edet=(\d*)&", text)
     if code_match and code_match.group(1):
         code = code_match.group(1)
         error = IMPERVA_ERROR_CODES.get(code, "Unknown reason")

@@ -14,12 +14,10 @@ from xilriws.extension_comm import ExtensionComm
 from xilriws.extension_comm import FINISH_PROXY
 from xilriws.proxy import ProxyDistributor
 from xilriws.ptc_auth import LoginException
+from xilriws.ptc.ptc_utils import USER_AGENT
 
 logger = logger.bind(name="Browser")
 HEADLESS = not IS_DEBUG
-USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.3"
-)
 
 
 class ProxyException(Exception):
@@ -50,15 +48,13 @@ class Browser:
         if self.browser:
             self.session_count += 1
 
-            if self.session_count % 100 == 0:
+            if self.session_count % 60 == 0:
                 logger.info("Time for a browser restart")
                 self.stop_browser()
 
         if not self.browser:
             config = nodriver.Config(headless=HEADLESS, browser_executable_path=self.__find_chrome_executable())
-            config.add_argument(
-                "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3"
-            )
+            config.add_argument(f"--user-agent={USER_AGENT}")
 
             try:
                 for path in self.extension_paths:
@@ -78,7 +74,7 @@ class Browser:
                             "settings-default-brave-shields-page",
                         ],
                         element_id="fingerprintingSelectControlType",
-                        new_value="block",
+                        new_value="allow",
                         tab=self.tab,
                     )
 
@@ -153,12 +149,14 @@ class Browser:
             if not handler_url.endswith(f"?d={basic_url}"):
                 return
             if not js_future.done():
+                logger.debug(f"Passed JS check ({handler_url})")
                 js_future.set_result(True)
 
         return js_future, js_check_handler
 
     async def change_proxy(self):
         proxy_future = await self.ext_comm.add_listener(FINISH_PROXY)
+        # TODO: add try/except and restart the browser
         used_proxy = await self.proxies.change_proxy()
 
         if used_proxy:
@@ -265,7 +263,7 @@ class Browser:
                         "Google/Chrome Canary/Application",
                         # "Chromium/Application"
                     ):
-                        candidates.append(os.sep.join((item, subitem, "brave.exe")))
+                        # candidates.append(os.sep.join((item, subitem, "brave.exe")))
                         candidates.append(os.sep.join((item, subitem, "chrome.exe")))
         rv = []
         for candidate in candidates:

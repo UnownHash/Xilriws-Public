@@ -28,6 +28,11 @@ class InvalidCredentials(LoginException):
     pass
 
 
+class PtcBanned(Exception):
+    """account is ptc banned, report as such"""
+    pass
+
+
 class PtcAuth:
     def __init__(self, cookie_monster: CookieMonster):
         self.cookie_monster = cookie_monster
@@ -50,16 +55,14 @@ class PtcAuth:
                     "Accept-Language": "en-us",
                     "Connection": "keep-alive",
                     "Accept-Encoding": "gzip, deflate, br",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/123.0.0.0 Safari/537.36",
+                    "User-Agent": ptc_utils.USER_AGENT,
                 },
                 allow_redirects=True,
                 verify=False,
                 timeout=10,
                 proxy=cookie.proxy.full_url.geturl(),
                 cookies=cookie.cookies,
-                impersonate="chrome120",
+                impersonate="chrome",
             ) as client:
                 logger.info("Calling OAUTH page")
 
@@ -69,12 +72,8 @@ class PtcAuth:
                     logger.error(f"Error {str(e)} during OAUTH")
                     continue
 
-                if resp.status_code == 403:
-                    await self.handle_imperva_error(resp.text, cookie)
+                if not await self.__check_status(resp, cookie):
                     continue
-
-                if resp.status_code != 200:
-                    raise LoginException(f"OAUTH: {resp.status_code} but expected 200")
 
                 csrf, challenge = self.__extract_csrf_and_challenge(resp.text)
 
@@ -90,12 +89,8 @@ class PtcAuth:
                     logger.error(f"Error {str(e)} during LOGIN")
                     continue
 
-                if login_resp.status_code == 403:
-                    await self.handle_imperva_error(login_resp.text, cookie)
+                if not await self.__check_status(login_resp, cookie):
                     continue
-
-                if login_resp.status_code != 200:
-                    raise LoginException(f"LOGIN: {login_resp.status_code} but expected 200")
 
                 login_code = self.__extract_login_code(login_resp.text)
 
@@ -110,6 +105,7 @@ class PtcAuth:
                     logger.info("Calling CONSENT page")
 
                     try:
+                        logger.debug(login_resp.text)
                         csrf_consent, challenge_consent = self.__extract_csrf_and_challenge(login_resp.text)
                     except LoginException:
                         logger.error(f"Could not find a CSRF token for account {username} - it's probably unactivated")
@@ -124,12 +120,9 @@ class PtcAuth:
                         logger.error(f"Error {str(e)} during CONSENT")
                         continue
 
-                    if resp_consent.status_code == 403:
-                        await self.handle_imperva_error(resp_consent.text, cookie)
+                    if not await self.__check_status(resp_consent, cookie):
                         continue
 
-                    if resp_consent.status_code != 200:
-                        raise LoginException(f"Consent: {resp_consent.status_code} but expected 200")
                     login_code = self.__extract_login_code(resp_consent.text)
                     if not login_code:
                         raise LoginException("No Login Code after consent, please check account")
@@ -137,12 +130,27 @@ class PtcAuth:
 
         raise LoginException("Exceeded max retries during PTC auth")
 
+    async def __check_status(self, resp: httpx.Response, cookie: ReeseCookie) -> bool:
+        if resp.status_code == 403 or "Request unsuccessful. Incapsula" in resp.text:
+            await self.handle_imperva_error(resp.text, cookie)
+            return False
+
+        logger.debug(resp.status_code)
+
+        if resp.status_code == 418:
+            raise PtcBanned()
+
+        if resp.status_code != 200:
+            raise LoginException(f"PTC: {resp.status_code} but expected 200")
+
+        return True
+
     async def handle_imperva_error(self, html: str, cookie: ReeseCookie):
         imp_code, imp_reason = ptc_utils.get_imperva_error_code(html)
         await self.cookie_monster.remove_cookie(cookie)
         cookie.proxy.rate_limited()
         logger.warning(
-            f"Error code {imp_code} ({imp_reason}) during PTC request, trying again (Proxy: {cookie.proxy.url})"
+            f"Error code {imp_code} ({imp_reason}) during PTC request, trying again with another proxy (Proxy: {cookie.proxy.url})"
         )
 
     def check_error_on_login_page(self, content: str):

@@ -30,6 +30,8 @@ class CionResponse:
 
 class BrowserJoin(Browser):
     async def get_join_tokens(self) -> CionResponse | None:
+        proxy = self.proxies.next_proxy
+
         try:
             await self.start_browser()
         except Exception:
@@ -42,17 +44,16 @@ class BrowserJoin(Browser):
             await self.new_tab()
             await self.change_proxy()
 
-            proxy = self.proxies.current_proxy
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening Join page")
+            await self.tab.get(url=JOIN_URL)
 
             html = await self.tab.get_content()
             if "neterror" in html.lower():
-                proxy.invalidate()  # TODO this doesn't actually do anything
                 raise ProxyException(f"Page couldn't be reached (Proxy: {proxy.url})")
 
             try:
-                await asyncio.wait_for(js_future, timeout=60)
+                await asyncio.wait_for(js_future, timeout=15)
                 self.tab.handlers.clear()
                 logger.info("JS check done. reloading")
             except asyncio.TimeoutError:
@@ -101,7 +102,9 @@ class BrowserJoin(Browser):
             await asyncio.sleep(1)
             return None
         except ProxyException as e:
+            proxy.invalidate()
             logger.error(f"{str(e)} while getting tokens")
+            self.stop_browser()
             return None
         except Exception as e:
             logger.exception("Exception during browser", e)
