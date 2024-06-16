@@ -1,4 +1,3 @@
-const STEALTH_JS = ""
 const ws = new WebSocket('ws://127.0.0.1:9091');
 
 let currentProxyCreds = {
