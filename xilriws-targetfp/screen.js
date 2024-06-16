@@ -66,4 +66,94 @@ export function block() {
     utils.overwriteProp(window, "screenX", 0)
     utils.overwriteProp(window, "screenY", 0)
     utils.overwriteProp(window, "devicePixelRatio", 1)
+
+    utils.overwriteProp(window.visualViewport, "scale", 1)
+    utils.overwriteProp(window.visualViewport, "width", utils.randomNumber(150, screenWidth - 100))
+    utils.overwriteProp(window.visualViewport, "height", utils.randomNumber(150, screenHeight - 100))
+
+    // mouse events
+    let mouseEventsActive = true
+    let currentMouseX = utils.randomNumber(1, screenWidth)
+    let currentMouseY = utils.randomNumber(1, screenHeight - 60)
+    let mouseOutCallback = null
+    let mouseOverCallback = null
+
+    async function randomMouseOver() {
+        console.log("faking mouseover & mouseout")
+        let max = 2
+
+        while (mouseEventsActive && max > 0) {
+            max -= 1
+            await new Promise(resolve => setTimeout(resolve, utils.randomNumber(50, 150)))
+            const eventData = {
+                clientX: currentMouseX,
+                clientY: currentMouseY,
+                screenX: currentMouseX,
+                screenY: currentMouseY - 13
+            }
+
+            mouseOutCallback(new MouseEvent("mouseout", eventData))
+            mouseOverCallback(new MouseEvent("mouseover", eventData))
+        }
+    }
+
+    /**
+     * @param {(event: MouseEvent) => {}} callback
+     */
+    async function randomMouseMove(callback) {
+        console.log("faking mousemove")
+        let max = 4
+
+        while (mouseEventsActive && max > 0) {
+            max -= 1
+            await new Promise(resolve => setTimeout(resolve, utils.randomNumber(50, 200)))
+
+            currentMouseX += utils.randomNumber(2, 20)
+            currentMouseY += utils.randomNumber(4, 27)
+            callback(new MouseEvent("mousemove", {
+                clientX: currentMouseX,
+                clientY: currentMouseY,
+                screenX: currentMouseX,
+                screenY: currentMouseY - 13
+            }))
+        }
+    }
+
+    const anyMouseEvents = utils.randomNumber(0, 10) > 2
+    const anyMouseOver = utils.randomNumber(0, 10) > 2
+
+    const originalAddEventListener = Document.prototype.addEventListener
+    const originalRemoveEventListener = Document.prototype.removeEventListener
+
+    Document.prototype.addEventListener = function(eventType, callback) {
+        if (!anyMouseEvents) {
+            return
+        }
+
+        if (eventType === "mousemove") {
+            randomMouseMove(callback).then()
+        }
+
+        if (anyMouseOver && eventType === "mouseout") {
+            mouseOutCallback = callback
+
+            if (mouseOverCallback) {
+                randomMouseOver().then()
+            }
+        }
+        if (anyMouseOver && eventType === "mouseover") {
+            mouseOverCallback = callback
+
+            if (mouseOutCallback) {
+                randomMouseOver().then()
+            }
+        }
+
+        return originalAddEventListener.bind(this, eventType, callback)()
+    }
+
+    Document.prototype.removeEventListener = function(eventType, callback) {
+        mouseEventsActive = false
+        return originalRemoveEventListener.bind(this, eventType, callback)()
+    }
 }

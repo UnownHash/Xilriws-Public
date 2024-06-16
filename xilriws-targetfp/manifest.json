@@ -92,6 +92,14 @@
             "matches": [
                 "<all_urls>"
             ]
+        },
+        {
+            "resources": [
+                "webgl.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
         }
     ]
 }

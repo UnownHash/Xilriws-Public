@@ -1,4 +1,12 @@
+const ws = new WebSocket('ws://127.0.0.1:9091');
+
 let random = null
+
+export function sendWs(action, detail = null) {
+    try {
+        ws.send(JSON.stringify({action: action, detail: detail}))
+    } catch (e) {}
+}
 
 export function setSeed(newSeed) {
     random = seededRandom(newSeed)
@@ -27,11 +35,6 @@ export function overwriteProp(object, propName, propValue) {
         set: () => {},
         configurable: true
     });
-}
-
-
-export function overwriteFunc(object, funcName, func) {
-   object[funcName] = func
 }
 
 /**
