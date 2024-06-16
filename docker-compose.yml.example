@@ -1,23 +1,11 @@
 version: '3'
 
 services:
-  reverse-proxy:
-    image: traefik:v2.11
-    container_name: xilriws
-    command: --api.insecure=true --providers.docker --providers.docker.exposedbydefault=false --entrypoints.def.address=:5090
-    ports:
-      - "5090:5090"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-  xilriws-worker:
+  xilriws:
     image: ghcr.io/unownhash/xilriws-public:main
     restart: unless-stopped
-    expose:
-    - "5090"
     volumes:
       - ./proxies.txt:/xilriws/proxies.txt
-    labels:
-      - traefik.http.routers.xilriws.rule=HostRegexp(`{catchall:.*}`)
-      - traefik.enable=true
-    deploy:
-      replicas: 1
+    ports:
+    - "5090:5090"
+
