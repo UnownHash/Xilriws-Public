@@ -135,13 +135,13 @@ class PtcAuth:
             await self.handle_imperva_error(resp.text, cookie)
             return False
 
-        logger.debug(resp.status_code)
+        logger.debug(f"PTC response: {resp.status_code} | {resp.text}")
 
         if resp.status_code == 418:
             raise PtcBanned()
 
         if resp.status_code != 200:
-            raise LoginException(f"PTC: {resp.status_code} but expected 200")
+            raise LoginException(f"PTC: {resp.status_code} but expected 200 - {resp.text}")
 
         return True
 
