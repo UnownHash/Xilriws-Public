@@ -8,9 +8,10 @@ from loguru import logger
 from curl_cffi import requests
 
 from .constants import ACCESS_URL, COOKIE_STORAGE
+from xilriws.ptc import ptc_utils
 
 if TYPE_CHECKING:
-    from .reese_cookie import CookieMonster
+    from .reese_cookie import CookieMonster, ReeseCookie
 
 logger = logger.bind(name="PTC")
 
@@ -53,16 +54,14 @@ class PtcAuth:
                     "Accept-Language": "en-us",
                     "Connection": "keep-alive",
                     "Accept-Encoding": "gzip, deflate, br",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/123.0.0.0 Safari/537.36",
+                    "User-Agent": ptc_utils.USER_AGENT,
                 },
                 allow_redirects=True,
                 verify=False,
                 timeout=10,
-                proxy=cookie.proxy,
+                proxy=cookie.proxy.full_url.geturl(),
                 cookies=cookie.cookies,
-                impersonate="chrome120"
+                impersonate="chrome",
             ) as client:
                 logger.info("Calling OAUTH page")
 
@@ -72,9 +71,7 @@ class PtcAuth:
                     logger.error(f"Error {str(e)} during OAUTH")
                     continue
 
-                if not self.__check_status(resp):
-                    # TODO it doesn't seem to actually invalidate this cookie
-                    await self.cookie_monster.remove_cookie(cookie)
+                if not await self.__check_status(resp, cookie):
                     continue
 
                 csrf, challenge = self.__extract_csrf_and_challenge(resp.text)
@@ -91,9 +88,7 @@ class PtcAuth:
                     logger.error(f"Error {str(e)} during LOGIN")
                     continue
 
-                if not self.__check_status(resp):
-                    # TODO it doesn't seem to actually invalidate this cookie
-                    await self.cookie_monster.remove_cookie(cookie)
+                if not await self.__check_status(login_resp, cookie):
                     continue
 
                 login_code = self.__extract_login_code(login_resp.text)
@@ -109,6 +104,7 @@ class PtcAuth:
                     logger.info("Calling CONSENT page")
 
                     try:
+                        logger.debug(login_resp.text)
                         csrf_consent, challenge_consent = self.__extract_csrf_and_challenge(login_resp.text)
                     except LoginException:
                         logger.error(f"Could not find a CSRF token for account {username} - it's probably unactivated")
@@ -123,9 +119,7 @@ class PtcAuth:
                         logger.error(f"Error {str(e)} during CONSENT")
                         continue
 
-                    if not self.__check_status(resp):
-                        # TODO it doesn't seem to actually invalidate this cookie
-                        await self.cookie_monster.remove_cookie(cookie)
+                    if not await self.__check_status(resp_consent, cookie):
                         continue
 
                     login_code = self.__extract_login_code(resp_consent.text)
@@ -135,19 +129,28 @@ class PtcAuth:
 
         raise LoginException("Exceeded max retries during PTC auth")
 
-    def __check_status(self, resp: httpx.Response) -> bool:
-        if resp.status_code == 403:
-            logger.info("Cookie expired. Invalidating and trying again")
+    async def __check_status(self, resp: httpx.Response, cookie: ReeseCookie) -> bool:
+        if resp.status_code == 403 or "Request unsuccessful. Incapsula" in resp.text:
+            await self.handle_imperva_error(resp.text, cookie)
             return False
+
+        logger.debug(f"PTC response: {resp.status_code} | {resp.text}")
 
         if resp.status_code == 418:
             raise PtcBanned()
 
         if resp.status_code != 200:
-            raise LoginException(f"PTC: {resp.status_code} but expected 200")
+            raise LoginException(f"PTC: {resp.status_code} but expected 200 - {resp.text}")
 
         return True
 
+    async def handle_imperva_error(self, html: str, cookie: ReeseCookie):
+        imp_code, imp_reason = ptc_utils.get_imperva_error_code(html)
+        await self.cookie_monster.remove_cookie(cookie)
+        cookie.proxy.rate_limited()
+        logger.warning(
+            f"Error code {imp_code} ({imp_reason}) during PTC request, trying again with another proxy (Proxy: {cookie.proxy.url})"
+        )
 
     def check_error_on_login_page(self, content: str):
         if "Your username or password is incorrect." in content:

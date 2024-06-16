@@ -12,13 +12,13 @@ from .proxy_dispenser import ProxyDispenser
 from .task_creator import task_creator, AwaitableSet
 
 if TYPE_CHECKING:
-    from .browser import Browser
+    from .browser.browser_auth import BrowserAuth
 
 logger = logger.bind(name="Cookie")
 
 
 class ReeseCookie:
-    def __init__(self, cookies: dict[str, str], proxy: str):
+    def __init__(self, cookies: dict[str, str], proxy: Proxy):
         self.value: str = "value"
         self.expiration: float = time.time() + EXPIRATION
         self.uses: int = 0
@@ -35,8 +35,8 @@ class ReeseCookie:
 class CookieMonster:
     fill_event: asyncio.Event
 
-    def __init__(self, browser: Browser, proxies: ProxyDistributor, proxy_dispenser: ProxyDispenser):
-        self.browser: Browser = browser
+    def __init__(self, browser: BrowserAuth, proxies: ProxyDistributor, proxy_dispenser: ProxyDispenser):
+        self.browser: BrowserAuth = browser
         self.cookies: AwaitableSet[ReeseCookie] = AwaitableSet()
         self.proxies = proxies
         self.proxy_dispenser = proxy_dispenser
@@ -74,8 +74,6 @@ class CookieMonster:
 
             try:
                 while len(self.cookies) < COOKIE_STORAGE:
-                    proxy = await self.proxy_dispenser.get_auth_proxy()
-                    self.proxies.set_next_proxy(proxy)
                     await self.__get_one_cookie()
                     logger.info(f"Cookie storage at {len(self.cookies)}/{COOKIE_STORAGE}")
             except Exception as e:
@@ -99,8 +97,10 @@ class CookieMonster:
 
     async def __get_one_cookie(self) -> ReeseCookie | None:
         logger.info("Opening browser to get a cookie")
+        proxy = await self.proxy_dispenser.get_auth_proxy()
+        proxy_changed = self.proxies.set_next_proxy(proxy)
 
-        cookie = await self.browser.get_reese_cookie()
+        cookie = await self.browser.get_reese_cookie(proxy_changed)
 
         if not cookie:
             return None

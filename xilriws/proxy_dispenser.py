@@ -32,15 +32,20 @@ class ProxyDispenser:
             self.proxies.append(Proxy(None))
 
         self.current_auth_index = 0
+        self.current_proxy_uses = 0
 
     async def get_auth_proxy(self) -> Proxy:
-        proxy = self.proxies[self.current_auth_index]
-        self.current_auth_index = (self.current_auth_index + 1) % len(self.proxies)
-        return proxy
+        self.current_proxy_uses += 1
+        if self.current_proxy_uses > 100:
+            self.current_auth_index = (self.current_auth_index + 1) % len(self.proxies)
+            self.current_proxy_uses = 0
 
-        # while True:
-        #     for proxy in self.proxies:
-        #         if not proxy.invalidated and proxy.last_limited + AUTH_TIMEOUT < time.time():
-        #             return proxy
-        #     logger.warning("No free proxies! Consider adding more")
-        #     await asyncio.sleep(5)
+        for i, proxy in enumerate(self.proxies):
+            if i >= self.current_auth_index and proxy.is_good():
+                return proxy
+
+        logger.error("No free Proxies!")
+        self.current_auth_index = 0
+        self.current_proxy_uses = 0
+        await asyncio.sleep(5)
+        return await self.get_auth_proxy()

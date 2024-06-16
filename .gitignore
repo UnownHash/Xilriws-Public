@@ -13,3 +13,5 @@ test
 *.txt
 node_modules/*
 test*
+chrome_win_fp.json
+xilriws/companion.py

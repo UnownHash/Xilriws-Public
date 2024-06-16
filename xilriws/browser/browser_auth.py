@@ -19,7 +19,11 @@ logger = logger.bind(name="Browser")
 
 
 class BrowserAuth(Browser):
-    async def get_reese_cookie(self) -> ReeseCookie | None:
+    first_run = True
+
+    async def get_reese_cookie(self, proxy_changed: bool) -> ReeseCookie | None:
+        proxy = self.proxies.next_proxy
+
         try:
             await self.start_browser()
         except Exception:
@@ -30,43 +34,51 @@ class BrowserAuth(Browser):
             cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
 
             await self.new_tab()
-            await self.change_proxy()
+            if proxy_changed:
+                await self.change_proxy()
+
+            if not self.first_run and cookie_future and not cookie_future.done():
+                try:
+                    await asyncio.wait_for(cookie_future, 2)
+                except asyncio.TimeoutError:
+                    logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
+
+            self.first_run = False
 
             if self.last_cookies:
-                if cookie_future and not cookie_future.done():
-                    try:
-                        await asyncio.wait_for(cookie_future, 2)
-                    except asyncio.TimeoutError:
-                        logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
                 await self.browser.cookies.set_all(self.last_cookies)
 
-            proxy = self.proxies.current_proxy
-
-            if IS_DEBUG:
-                await self.log_ip()
+            # if IS_DEBUG:
+            #     await self.log_ip()
 
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening PTC")
-            await self.tab.get(url=ACCESS_URL + "login")
 
-            html = await self.tab.get_content()
+            try:
+                await asyncio.wait_for(self.tab.get(url=ACCESS_URL + "login"), timeout=60)
+                html = await asyncio.wait_for(self.tab.get_content(), timeout=60)
+            except asyncio.TimeoutError:
+                raise ProxyException(f"Page timed out (Proxy: {proxy.url})")
+
             if "neterror" in html.lower():
-                proxy.invalidate()  # TODO this doesn't actually do anything
                 raise ProxyException(f"Page couldn't be reached (Proxy: {proxy.url})")
 
             imp_code, imp_reason = ptc_utils.get_imperva_error_code(html)
             if imp_code not in ("15", "?"):
-                proxy.invalidate()
-                raise LoginException(f"Error code {imp_code} ({imp_reason}) with Proxy ({proxy.url})")
+                proxy.rate_limited()
+                raise LoginException(f"Error code {imp_code} ({imp_reason}) with (Proxy: {proxy.url})")
             else:
                 logger.info("Successfully got error 15 page")
                 if not js_future.done():
                     try:
-                        await asyncio.wait_for(js_future, timeout=10)
+                        logger.info("Waiting for JS check")
+                        await asyncio.wait_for(js_future, timeout=20)
                         self.tab.handlers.clear()
                         logger.info("JS check done. reloading")
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
+                else:
+                    logger.debug("JS check already done, continuing")
                 await self.tab.reload()
                 new_html = await self.tab.get_content()
                 if "log in" not in new_html.lower():
@@ -79,13 +91,15 @@ class BrowserAuth(Browser):
             all_cookies = await self.get_cookies()
 
             self.consecutive_failures = 0
-            return ReeseCookie(all_cookies, proxy.full_url.geturl())
+            return ReeseCookie(all_cookies, proxy)
         except LoginException as e:
             logger.error(f"{str(e)} while getting cookie")
             self.consecutive_failures += 1
             return None
         except ProxyException as e:
+            proxy.invalidate()
             logger.error(f"{str(e)} while getting cookie")
+            self.stop_browser()
             return None
         except Exception as e:
             logger.exception("Exception in browser", e)
