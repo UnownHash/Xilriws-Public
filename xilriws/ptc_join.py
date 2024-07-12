@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .browser import Browser, CionResponse
+from .browser import Browser, CionResponse, BrowserJoin
 from .task_creator import task_creator
 from loguru import logger
 import asyncio
@@ -10,7 +10,7 @@ logger = logger.bind(name="Tokens")
 
 
 class PtcJoin:
-    def __init__(self, browser: Browser, proxies: ProxyDistributor, proxy_dispenser: ProxyDispenser):
+    def __init__(self, browser: BrowserJoin, proxies: ProxyDistributor, proxy_dispenser: ProxyDispenser):
         self.browser = browser
         self.responses: list[CionResponse] = []
         self.proxies = proxies
@@ -31,8 +31,8 @@ class PtcJoin:
             try:
                 proxy = await self.proxy_dispenser.get_auth_proxy()
                 proxy.rate_limited()
-                self.proxies.set_next_proxy(proxy)
-                resp = await self.browser.get_join_tokens()
+                proxy_changed = self.proxies.set_next_proxy(proxy)
+                resp = await self.browser.get_join_tokens(proxy_changed)
                 if resp:
                     self.responses.append(resp)
             except Exception as e:

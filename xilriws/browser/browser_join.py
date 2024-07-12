@@ -14,6 +14,7 @@ from xilriws.js import load, recaptcha
 from xilriws.ptc_auth import LoginException
 from .browser import Browser, ProxyException
 from xilriws.ptc import ptc_utils
+from xilriws.extension_comm import FINISH_PROXY, FINISH_COOKIE_PURGE
 
 
 logger = logger.bind(name="Browser")
@@ -29,7 +30,9 @@ class CionResponse:
 
 
 class BrowserJoin(Browser):
-    async def get_join_tokens(self) -> CionResponse | None:
+    first_run = True
+
+    async def get_join_tokens(self, proxy_changed: bool) -> CionResponse | None:
         proxy = self.proxies.next_proxy
 
         try:
@@ -40,9 +43,17 @@ class BrowserJoin(Browser):
         try:
             timestamp = int(time.time())
             js_future, js_check_handler = await self.get_js_check_handler(JOIN_URL)
+            cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
 
             await self.new_tab()
-            await self.change_proxy()
+            if proxy_changed:
+                await self.change_proxy()
+
+            if not self.first_run and cookie_future and not cookie_future.done():
+                try:
+                    await asyncio.wait_for(cookie_future, 2)
+                except asyncio.TimeoutError:
+                    logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
 
             self.tab.add_handler(nodriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening Join page")
