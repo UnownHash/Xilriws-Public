@@ -80,6 +80,7 @@ jobs:
           cp -r xilriws-repo/xilriws-cookie-delete cion-xilriws/xilriws-cookie-delete
           cp -r xilriws-repo/xilriws-fingerprint-random cion-xilriws/xilriws-fingerprint-random
           cp -r xilriws-repo/xilriws-proxy cion-xilriws/xilriws-proxy
+          cp -r xilriws-repo/xilriws-targetfp cion-xilriws/xilriws-targetfp
           cp xilriws-repo/Dockerfile cion-xilriws/Dockerfile
           mv xilriws_cion cion-xilriws/xilriws
           rm -r -f xilriws-repo
