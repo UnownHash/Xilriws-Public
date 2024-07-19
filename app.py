@@ -47,9 +47,8 @@ async def main(cion_mode: bool):
 
     browser_args = {
         "extension_paths": [
-            # config.get("fingerprint_random_path", "/xilriws/xilriws-fingerprint-random/"),
-            # config.get("cookie_delete_path", "/xilriws/xilriws-cookie-delete/"),
             config.get("proxy", "/xilriws/xilriws-proxy"),
+            config.get("targetfp_path", "/xilriws/xilriws-targetfp"),
         ],
         "proxies": proxies,
         "ext_comm": ext_comm
