@@ -29,7 +29,6 @@ RUN apt install -y google-chrome-stable
 #RUN apt update -y
 #RUN apt install -y brave-browser
 
-RUN pip install poetry
 COPY . .
 RUN poetry install
 
