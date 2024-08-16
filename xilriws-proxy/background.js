@@ -5,6 +5,27 @@ let currentProxyCreds = {
     "password": null
 }
 
+const blockedScripts = [
+    "login-util.js",
+    "screen-name-script.js",
+    "set-state-script.js",
+]
+const blockedFiles = ["woff", "ttf", "css", "png", "jpg", "jpeg", "svg", "ico"]
+
+
+const BLOCK_URLS = [
+    "*://fonts.googleapis.com/*",
+]
+
+blockedScripts.forEach(name => BLOCK_URLS.push("*://access.pokemon.com/scripts/" + name))
+blockedFiles.forEach(name => BLOCK_URLS.push("*://*/*." + name + "*"))
+
+chrome.webRequest.onBeforeRequest.addListener(
+    () => { return {cancel: true} },
+    {urls: BLOCK_URLS},
+    ["blocking"]
+)
+
 ws.onmessage = (event) => {
     console.log('Message from server: ', event.data);
     const message = JSON.parse(event.data)
