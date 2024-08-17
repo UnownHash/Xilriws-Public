@@ -5,7 +5,7 @@ let currentProxyCreds = {
     "password": null
 }
 
-const blockedScripts = [
+const blockedAccessScripts = [
     "login-util.js",
     "screen-name-script.js",
     "set-state-script.js",
@@ -15,9 +15,12 @@ const blockedFiles = ["woff", "ttf", "css", "png", "jpg", "jpeg", "svg", "ico"]
 
 const BLOCK_URLS = [
     "*://fonts.googleapis.com/*",
+    "*://*.launchdarkly.com/*",
+    "*://*.browser-intake-datadoghq.com/*",
+    "*://join.pokemon.com/manifest.json"
 ]
 
-blockedScripts.forEach(name => BLOCK_URLS.push("*://access.pokemon.com/scripts/" + name))
+blockedAccessScripts.forEach(name => BLOCK_URLS.push("*://access.pokemon.com/scripts/" + name))
 blockedFiles.forEach(name => BLOCK_URLS.push("*://*/*." + name + "*"))
 
 chrome.webRequest.onBeforeRequest.addListener(
