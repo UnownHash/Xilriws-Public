@@ -77,8 +77,8 @@ jobs:
           cp dist/xilriws_cion cion/xilriws_cion
           cd cion
           git clone https://github.com/UnownHash/Xilriws-Public.git xilriws-repo
-          cp -r xilriws-repo/xilriws-cookie-delete cion-xilriws/xilriws-cookie-delete
-          cp -r xilriws-repo/xilriws-fingerprint-random cion-xilriws/xilriws-fingerprint-random
+          rm -rf xilriws-repo/xilriws-proxy
+          rm -rf xilriws-repo/xilriws-targetfp
           cp -r xilriws-repo/xilriws-proxy cion-xilriws/xilriws-proxy
           cp -r xilriws-repo/xilriws-targetfp cion-xilriws/xilriws-targetfp
           cp xilriws-repo/Dockerfile cion-xilriws/Dockerfile
