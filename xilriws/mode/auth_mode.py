@@ -19,13 +19,13 @@ logger = logger.bind(name="Xilriws")
 
 
 @dataclass
-class RequestData:
+class AuthRequest:
     username: str
     password: str
     url: str
 
 
-class ResponseStatus(Enum):
+class AuthResponseStatus(Enum):
     SUCCESS = 1
     ERROR = 2
     INVALID = 3
@@ -33,33 +33,57 @@ class ResponseStatus(Enum):
 
 
 @dataclass
-class ResponseData:
+class AuthResponse:
     status: str
     login_code: str = ""
 
 
 @post("/api/v1/login-code")
-async def auth_endpoint(request: Request, ptc_auth: PtcAuth, data: RequestData) -> Response[ResponseData]:
+async def auth_endpoint(request: Request, ptc_auth: PtcAuth, data: AuthRequest) -> Response[AuthResponse]:
     try:
         login_code = await ptc_auth.auth(data.username, data.password, data.url)
 
         logger.success("200 OK: successful auth")
         return Response(
-            ResponseData(login_code=login_code, status=ResponseStatus.SUCCESS.name), status_code=HTTP_200_OK
+            AuthResponse(login_code=login_code, status=AuthResponseStatus.SUCCESS.name), status_code=HTTP_200_OK
         )
     except InvalidCredentials:
         logger.warning("400 Bad Request: Invalid credentials")
-        return Response(ResponseData(status=ResponseStatus.INVALID.name), status_code=HTTP_400_BAD_REQUEST)
+        return Response(AuthResponse(status=AuthResponseStatus.INVALID.name), status_code=HTTP_400_BAD_REQUEST)
     except PtcBanned:
         logger.warning("418: account is ptc-banned")
-        return Response(ResponseData(status=ResponseStatus.BANNED.name), status_code=HTTP_418_IM_A_TEAPOT)
+        return Response(AuthResponse(status=AuthResponseStatus.BANNED.name), status_code=HTTP_418_IM_A_TEAPOT)
     except LoginException as e:
         logger.error(f"Error: {str(e)}")
     except Exception as e:
         logger.exception(e)
 
     logger.warning("500 Internal Server Error: Additional output above")
-    return Response(ResponseData(status=ResponseStatus.ERROR.name), status_code=HTTP_500_INTERNAL_SERVER_ERROR)
+    return Response(AuthResponse(status=AuthResponseStatus.ERROR.name), status_code=HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@dataclass
+class ActivateRequest:
+    email: str
+    code: str
+
+
+class ActivateResponseStatus(Enum):
+    SUCCESS = 1
+    NO_OPEN_ACTIVATION = 2
+
+
+@dataclass
+class ActivateResponse:
+    status: str
+    username: str | None = None
+    email: str | None = None
+    password: str | None = None
+
+
+@post("/api/v1/activate")
+async def activate_endpoint(data: ActivateRequest) -> ActivateResponse:
+    return ActivateResponse(status=ActivateResponseStatus.NO_OPEN_ACTIVATION.name)
 
 
 class AuthMode(BasicMode):
@@ -75,6 +99,6 @@ class AuthMode(BasicMode):
 
     def get_litestar(self) -> Litestar:
         return Litestar(
-            route_handlers=[auth_endpoint],
+            route_handlers=[auth_endpoint, activate_endpoint],
             dependencies={"ptc_auth": Provide(self._get_ptc_auth)}
         )

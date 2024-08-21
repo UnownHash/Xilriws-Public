@@ -32,6 +32,7 @@ class PtcBanned(Exception):
     """account is ptc banned, report as such"""
     pass
 
+
 class PtcAuth:
     def __init__(self, cookie_monster: CookieMonster):
         self.cookie_monster = cookie_monster
