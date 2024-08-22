@@ -45,8 +45,6 @@ class BrowserJoin(Browser):
             js_future, js_check_handler = await self.get_js_check_handler(JOIN_URL)
             cookie_future = await self.ext_comm.add_listener(FINISH_COOKIE_PURGE)
 
-            # TODO when there's a long period of inactiveness, the browser may become stale and fail here
-
             await self.new_tab()
 
             if proxy_changed:

@@ -51,6 +51,9 @@ class Browser:
             if self.session_count % 60 == 0:
                 logger.info("Time for a browser restart")
                 self.stop_browser()
+            elif not await self.health_check():
+                logger.info("Browser seems stale. Restarting")
+                self.stop_browser()
 
         if not self.browser:
             config = nodriver.Config(headless=HEADLESS, browser_executable_path=self.__find_chrome_executable())
@@ -116,6 +119,22 @@ class Browser:
             await tab.evaluate(inject_js)
         except Exception as e:
             logger.warning(f"{str(e)} while changing setting {element_id}, ignoring")
+
+    async def health_check(self) -> bool:
+        async def _check():
+            if not self.tab:
+                self.tab = await self.browser.get("about:blank")
+            resp = await self.tab.send(nodriver.cdp.browser.get_version())
+            try:
+                logger.debug(f"Health Check - Chrome version is {resp[1]}")
+            except IndexError:
+                pass
+
+        try:
+            await asyncio.wait_for(_check(), timeout=10)
+            return True
+        except Exception:
+            return False
 
     async def get_cookies(self) -> dict[str, str]:
         reese_value: str | None = None
