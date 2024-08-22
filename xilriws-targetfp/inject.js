@@ -37,10 +37,10 @@
 
     utils.sendWs("debug:seed", seed)
 
-    // screen.block()
-    // general.block()
-    // canvas.block()
-    // webgl.block()
+    screen.block()
+    general.block()
+    canvas.block()
+    webgl.block()
 
     document.fpLoaded = true
 })()
