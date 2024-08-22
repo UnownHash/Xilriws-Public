@@ -774,9 +774,9 @@ dev = ["black", "build", "furo", "pygments", "sphinx", "sphinx-autodoc-typehints
 
 [package.source]
 type = "git"
-url = "https://github.com/ultrafunkamsterdam/nodriver"
+url = "https://github.com/ccev/nodriver"
 reference = "HEAD"
-resolved_reference = "e630abfc5dce2023966a61cec739348b18bd465d"
+resolved_reference = "36b0b23364b6e7b8302fe516c2a6b3c1c4e26bc2"
 
 [[package]]
 name = "packaging"
@@ -1434,4 +1434,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "b2d0fd49b7cc6964005453385bf87c7334e7569d4364dd1eedd58b0cba0b9952"
+content-hash = "fe0e7497a0bfa39f9c5a2b5d35fd35c521e1d352936fc5b7e36ef564a6052b68"

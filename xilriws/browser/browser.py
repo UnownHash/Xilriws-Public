@@ -55,6 +55,8 @@ class Browser:
         if not self.browser:
             config = nodriver.Config(headless=HEADLESS, browser_executable_path=self.__find_chrome_executable())
             config.add_argument(f"--user-agent={USER_AGENT}")
+            if not IS_DEBUG:
+                config.add_argument("--window-size=1,1")
 
             try:
                 for path in self.extension_paths:
