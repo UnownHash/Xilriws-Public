@@ -61,6 +61,33 @@ class Browser:
             if not IS_DEBUG:
                 config.add_argument("--window-size=1,1")
 
+            disabled_features = [
+                "OptimizationHints",
+                "OptimizationHintsFetching",
+                "OptimizationHintsFetchingAnonymousDataConsent",
+                "ContextMenuPerformanceInfoAndRemoteHintFetching",
+                "OptimizationTargetPrediction",
+                "OptimizationGuideModelDownloading",
+                "OptimizationGuidePageContentExtraction",
+                "OptimizationHintsComponent",
+                "OptimizationHintsFetchingSRP",
+                "OptimizationPersonalizedHintsFetching",
+                "OptimizationGuideModelExecution",
+                "Translate",
+                "BackForwardCache",
+                "AcceptCHFrame",
+                "MediaRouter",
+                "DialMediaRouteProvider"
+            ]
+            config.add_argument(f"--disable-features={','.join(disabled_features)}")
+            config.add_argument("--disable-hang-monitor")
+            config.add_argument("--disable-background-networking")
+            config.add_argument("--disable-breakpad")
+            config.add_argument("--disable-default-apps")
+            config.add_argument("--disable-renderer-backgrounding")
+            config.add_argument("--no-first-run")
+
+
             try:
                 for path in self.extension_paths:
                     config.add_extension(path)
