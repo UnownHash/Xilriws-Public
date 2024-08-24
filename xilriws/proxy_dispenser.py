@@ -40,12 +40,12 @@ class ProxyDispenser:
             self.current_auth_index = (self.current_auth_index + 1) % len(self.proxies)
             self.current_proxy_uses = 0
 
-        for i, proxy in enumerate(self.proxies):
-            if i >= self.current_auth_index and proxy.is_good():
-                return proxy
+        while True:
+            for i, proxy in enumerate(self.proxies):
+                if i >= self.current_auth_index and proxy.is_good():
+                    return proxy
 
-        logger.error("No free Proxies!")
-        self.current_auth_index = 0
-        self.current_proxy_uses = 0
-        await asyncio.sleep(5)
-        return await self.get_auth_proxy()
+            logger.error("No free Proxies!")
+            self.current_auth_index = 0
+            self.current_proxy_uses = 0
+            await asyncio.sleep(5)

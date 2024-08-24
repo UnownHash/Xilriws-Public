@@ -77,7 +77,7 @@ class CookieMonster:
                     await self.__get_one_cookie()
                     logger.info(f"Cookie storage at {len(self.cookies)}/{COOKIE_STORAGE}")
             except Exception as e:
-                logger.exception("unahdnled excpetion while filling cookie storage, please report", e)
+                logger.exception("unhandled exception while filling cookie storage, please report", e)
 
             self.fill_event.clear()
 
