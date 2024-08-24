@@ -14,7 +14,9 @@ const blockedFiles = ["woff", "ttf", "css", "png", "jpg", "jpeg", "svg", "ico"]
 
 
 const BLOCK_URLS = [
+    "*://gstatic.com/*",
     "*://fonts.googleapis.com/*",
+    "*://optimizationguide-pa.googleapis.com/*",
     "*://*.launchdarkly.com/*",
     "*://*.browser-intake-datadoghq.com/*",
     "*://join.pokemon.com/manifest.json"
