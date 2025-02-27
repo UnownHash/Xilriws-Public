@@ -13,13 +13,15 @@ RUN cp -r Xilriws-Public/xilriws-proxy /xilriws/xilriws-proxy
 RUN cp -r Xilriws-Public/xilriws-targetfp /xilriws/xilriws-targetfp
 
 RUN apt install -y software-properties-common
-RUN apt update -y
-RUN apt install -y python3 python3-pip
-RUN pip install poetry --break-system-packages
+RUN apt update && apt install -y python3 python3-venv
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --upgrade pip==25.0.1
+RUN pip install poetry
 
 RUN apt install -y wget
 
-RUN wget -q -O - https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_125.0.6422.141-1_amd64.deb > ./chrome.deb
+RUN wget -q -O - https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_133.0.6943.141-1_amd64.deb > ./chrome.deb
 RUN apt install -y ./chrome.deb
 RUN rm ./chrome.deb
 
@@ -36,6 +38,6 @@ RUN rm ./chrome.deb
 #RUN apt install -y brave-browser
 
 COPY . .
-RUN poetry install
+RUN poetry install --no-root
 
 ENTRYPOINT ["poetry", "run", "python", "app.py"]
