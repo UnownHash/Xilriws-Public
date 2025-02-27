@@ -116,11 +116,11 @@ class BrowserJoin(Browser):
         except ProxyException as e:
             proxy.invalidate()
             logger.error(f"{str(e)} while getting tokens")
-            await self.stop_browser()
+            self.stop_browser()
             return None
         except Exception as e:
             logger.exception("Exception during browser", e)
 
         logger.error("Error while getting cookie from browser, it will be restarted next time")
-        await self.stop_browser()
+        self.stop_browser()
         return None
