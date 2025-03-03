@@ -221,7 +221,7 @@ class Browser:
             tab = await self.tab.get("about:blank", new_tab=True)
             await self.tab.close()
             self.tab = tab
-        await self.tab.sleep(1)
+        await self.tab.sleep(0.25)
 
     async def new_private_window(self):
         context_id = await self.browser.connection.send(zendriver.cdp.target.create_browser_context())
