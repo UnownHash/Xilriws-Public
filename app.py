@@ -25,6 +25,8 @@ zendriver_logger = logging.getLogger("zendriver")
 zendriver_logger.setLevel(logging.CRITICAL)
 ws_logger = logging.getLogger("websockets")
 ws_logger.setLevel(logging.CRITICAL)
+conn_logger = logging.getLogger("uc.connection")
+conn_logger.setLevel(logging.CRITICAL)
 
 logger = logger.bind(name="Xilriws")
 
