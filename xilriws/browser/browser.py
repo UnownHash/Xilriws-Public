@@ -50,10 +50,10 @@ class Browser:
 
             if self.session_count % 60 == 0:
                 logger.info("Time for a browser restart")
-                self.stop_browser()
+                await self.stop_browser()
             elif not await self.health_check():
                 logger.info("Browser seems stale. Restarting")
-                self.stop_browser()
+                await self.stop_browser()
 
         if not self.browser:
             config = zendriver.Config(headless=HEADLESS, browser_executable_path=self.__find_chrome_executable())
@@ -274,8 +274,8 @@ class Browser:
             if 'id="canvas-hash"' in line:
                 logger.info(f"Canvas fingerprint: {line}")
 
-    def stop_browser(self):
-        self.browser.stop()
+    async def stop_browser(self):
+        await self.browser.stop()
         self.tab = None
         self.browser = None
 

@@ -99,12 +99,12 @@ class BrowserAuth(Browser):
         except ProxyException as e:
             proxy.invalidate()
             logger.error(f"{str(e)} while getting cookie")
-            self.stop_browser()
+            await self.stop_browser()
             return None
         except Exception as e:
             logger.exception("Exception in browser", e)
 
         logger.error("Error while getting cookie from browser, it will be restarted next time")
         self.consecutive_failures += 1
-        self.stop_browser()
+        await self.stop_browser()
         return None
