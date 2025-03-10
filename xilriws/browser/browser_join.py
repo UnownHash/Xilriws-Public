@@ -30,8 +30,6 @@ class CionResponse:
 
 
 class BrowserJoin(Browser):
-    first_run = True
-
     async def get_join_tokens(self, proxy_changed: bool) -> CionResponse | None:
         proxy = self.proxies.next_proxy
 
@@ -55,6 +53,8 @@ class BrowserJoin(Browser):
                     await asyncio.wait_for(cookie_future, 2)
                 except asyncio.TimeoutError:
                     logger.info("Didn't get confirmation that cookies were cleared, continuing anyway")
+
+            self.first_run = False
 
             self.tab.add_handler(zendriver.cdp.network.ResponseReceived, js_check_handler)
             logger.info("Opening Join page")

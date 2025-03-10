@@ -30,6 +30,7 @@ class Browser:
     consecutive_failures = 0
     last_cookies: list[zendriver.cdp.network.CookieParam] | None = None
     session_count = 0
+    first_run = True
 
     def __init__(self, extension_paths: list[str], proxies: ProxyDistributor, ext_comm: ExtensionComm):
         self.extension_paths: list[str] = extension_paths
@@ -276,6 +277,7 @@ class Browser:
 
     async def stop_browser(self):
         await self.browser.stop()
+        self.first_run = True
         self.tab = None
         self.browser = None
 

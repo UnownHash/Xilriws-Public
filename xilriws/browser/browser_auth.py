@@ -19,8 +19,6 @@ logger = logger.bind(name="Browser")
 
 
 class BrowserAuth(Browser):
-    first_run = True
-
     async def get_reese_cookie(self, proxy_changed: bool) -> ReeseCookie | None:
         proxy = self.proxies.next_proxy
 
