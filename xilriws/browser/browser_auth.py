@@ -72,20 +72,41 @@ class BrowserAuth(Browser):
                 if not js_future.done():
                     try:
                         logger.info("Waiting for JS check")
-                        await asyncio.wait_for(js_future, timeout=20)
+                        await asyncio.wait_for(js_future, timeout=100)
                         self.tab.handlers.clear()
                         logger.info("JS check done. reloading")
                     except asyncio.TimeoutError:
                         raise LoginException("Timeout on JS challenge")
                 else:
                     logger.debug("JS check already done, continuing")
+
+                logger.debug("Reloading now")
                 await self.tab.reload()
-                new_html = await self.tab.get_content()
-                if "log in" not in new_html.lower():
-                    logger.debug(new_html)
-                    proxy.rate_limited()
-                    imp_code, imp_reason = ptc_utils.get_imperva_error_code(new_html)
-                    raise LoginException(f"Didn't pass JS check. Code {imp_code} ({imp_reason})")
+
+                attempts = 0
+                finished_reloading = False
+                while attempts < 10 and not finished_reloading:
+                    # This while loop checks the html until it finds "log in" or an imperva error code.
+                    # Before adding it, it would often log an error code "?". These seem to have been imperva
+                    # error pages that weren't loaded properly. But to make absolutely sure, we'll just retry.
+                    attempts += 1
+                    logger.debug(f"Checking reload content #{attempts}")
+
+                    new_html = await self.tab.get_content()
+                    if "log in" not in new_html.lower():
+                        logger.debug(new_html)
+                        proxy.rate_limited()
+                        imp_code, imp_reason = ptc_utils.get_imperva_error_code(new_html)
+                        if imp_code != "?":
+                            raise LoginException(f"Didn't pass JS check. Code {imp_code} ({imp_reason})")
+
+                        await self.tab.sleep(0.5)
+                    else:
+                        logger.info("Finished reloading")
+                        finished_reloading = True
+
+                if not finished_reloading:
+                    raise LoginException("Timed out while waiting for reload to finish")
 
             logger.info("Getting cookies from browser")
             all_cookies = await self.get_cookies()
