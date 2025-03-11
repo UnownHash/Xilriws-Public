@@ -12,7 +12,7 @@ httpx = "^0.27.0"
 loguru = "^0.7.2"
 websockets = "^14.0"
 curl-cffi = "^0.9.0"
-nodriver = "^0.40"
+nodriver = {git = "https://github.com/ccev/nodriver"}
 
 
 [tool.poetry.group.dev.dependencies]
