@@ -1,0 +1,17 @@
+.idea/*
+**/__pycache__/**
+config.json
+docker-compose.yml
+dist/*
+build/*
+*.spec
+requirements.txt
+fingerprint-random*
+xilriws-cookie-delete*
+test
+*.js
+*.txt
+node_modules/*
+test*
+chrome_win_fp.json
+xilriws/companion.py
