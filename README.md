@@ -3,7 +3,7 @@
 ## Installation
 
 1. `mkdir xilriws && cd xilriws`
-2. `wget https://raw.githubusercontent.com/UnownHash/Xilriws-Public/refs/heads/main/docker-compose.yml.example -O docker-compose.yml`
+2. `wget https://raw.githubusercontent.com/UnownHash/Xilriws/refs/heads/main/docker-compose.yml.example -O docker-compose.yml`
 3. `touch proxies.txt` file. Each line should have one proxy url. (i.e. `ip:port` or `http://user:pass@ip:port`)
 4. `docker compose pull`, then `docker compose up -d`
 
