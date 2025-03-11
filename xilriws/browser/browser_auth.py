@@ -53,8 +53,8 @@ class BrowserAuth(Browser):
             logger.info("Opening PTC")
 
             try:
-                await asyncio.wait_for(self.tab.get(url=ACCESS_URL + "login"), timeout=60)
-                html = await asyncio.wait_for(self.tab.get_content(), timeout=60)
+                await asyncio.wait_for(self.tab.get(url=ACCESS_URL + "login"), timeout=20)
+                html = await asyncio.wait_for(self.tab.get_content(), timeout=20)
             except asyncio.TimeoutError:
                 raise ProxyException(f"Page timed out (Proxy: {proxy.url})")
 
@@ -116,7 +116,8 @@ class BrowserAuth(Browser):
             self.consecutive_failures += 1
             return None
         except ProxyException as e:
-            proxy.invalidate()
+            # proxy.invalidate()
+            proxy.rate_limited()
             logger.error(f"{str(e)} while getting cookie")
             await self.stop_browser()
             return None
