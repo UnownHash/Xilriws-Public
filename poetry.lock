@@ -36,21 +36,6 @@ test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypo
 trio = ["trio (>=0.26.1)"]
 
 [[package]]
-name = "asyncio-atexit"
-version = "1.0.1"
-description = "Like atexit, but for asyncio"
-optional = false
-python-versions = ">=3.6"
-groups = ["main"]
-files = [
-    {file = "asyncio-atexit-1.0.1.tar.gz", hash = "sha256:1d0c71544b8ee2c484d322844ee72c0875dde6f250c0ed5b6993592ab9f7d436"},
-    {file = "asyncio_atexit-1.0.1-py3-none-any.whl", hash = "sha256:d93d5f7d5633a534abd521ce2896ed0fbe8de170bb1e65ec871d1c20eac9d376"},
-]
-
-[package.extras]
-test = ["pytest", "uvloop"]
-
-[[package]]
 name = "certifi"
 version = "2025.1.31"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -852,6 +837,26 @@ dev = ["build", "pytest", "pytest-cov", "twine"]
 docs = ["sphinx (>=8,<9)", "sphinx-autobuild"]
 
 [[package]]
+name = "nodriver"
+version = "0.40"
+description = "[Docs here](https://ultrafunkamsterdam.github.io/nodriver)"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "nodriver-0.40-py3-none-any.whl", hash = "sha256:a980aacd7efb1a18aaab92adf45451301fe0bbbd600ba6a1f4a61193aca25745"},
+    {file = "nodriver-0.40.tar.gz", hash = "sha256:96051eda8229b6accd6ca8b8c0408f6921dd014bb645c11916cee375d85c7a7b"},
+]
+
+[package.dependencies]
+deprecated = "*"
+mss = "*"
+websockets = ">=14"
+
+[package.extras]
+dev = ["black", "build", "furo", "pygments", "sphinx", "sphinx_autodoc_typehints", "sphinx_markdown_builder", "sphinxcontrib-video"]
+
+[[package]]
 name = "packaging"
 version = "24.2"
 description = "Core utilities for Python packages"
@@ -1528,25 +1533,7 @@ files = [
     {file = "wrapt-1.17.2.tar.gz", hash = "sha256:41388e9d4d1522446fe79d3213196bd9e3b301a336965b9e27ca2788ebd122f3"},
 ]
 
-[[package]]
-name = "zendriver"
-version = "0.5.1"
-description = "A blazing fast, async-first, undetectable webscraping/web automation framework"
-optional = false
-python-versions = ">=3.10"
-groups = ["main"]
-files = [
-    {file = "zendriver-0.5.1-py3-none-any.whl", hash = "sha256:0c09a26da1d2f63016c5e51675711e0034acb4164dc10ba57a27ace5b4da017d"},
-    {file = "zendriver-0.5.1.tar.gz", hash = "sha256:4367e1c4cd8117b88de11013565a2fcc56ab4b1e5bb678c813e601eb32c610d4"},
-]
-
-[package.dependencies]
-asyncio-atexit = ">=1.0.1"
-deprecated = ">=1.2.14"
-mss = ">=9.0.2"
-websockets = ">=14.0"
-
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "3379f1ea480a4fcfdc2612ae49feee7eff3eee92647a24b29f34a0c4732a94f2"
+content-hash = "ce0e53dc2dafcf3686a20f2bb448715abd0e8305fe3e2fe06bac13aaad5e5f21"
