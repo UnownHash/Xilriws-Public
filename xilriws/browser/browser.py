@@ -222,7 +222,7 @@ class Browser:
             tab = await self.tab.get("about:blank", new_tab=True)
             await self.tab.close()
             self.tab = tab
-        await self.tab.sleep(0.25)
+        await self.tab.sleep(0.4)
 
     async def new_private_window(self):
         context_id = await self.browser.connection.send(nodriver.cdp.target.create_browser_context())
