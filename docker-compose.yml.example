@@ -2,7 +2,7 @@ version: '3'
 
 services:
   xilriws:
-    image: ghcr.io/unownhash/xilriws-public:main
+    image: ghcr.io/unownhash/xilriws:main
     restart: unless-stopped
     volumes:
       - ./proxies.txt:/xilriws/proxies.txt
